@@ -1,5 +1,6 @@
 {
-  "name": "@adobecom/college",
+  "name": "@adobecom/da-xe-surfaces",
+  "main": "init.js",
   "private": true,
   "type": "module",
   "version": "1.0.0",
