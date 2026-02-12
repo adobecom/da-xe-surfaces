@@ -1,0 +1,62 @@
+.hva-card-inner {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  border: 1px solid var(--spectrum-gray-300, #c4c4c4);
+  border-radius: var(--spectrum-corner-radius-200, 8px);
+  background: var(--spectrum-gray-50, #fff);
+  box-sizing: border-box;
+  max-width: 100%;
+  overflow-x: auto;
+  min-width: 0;
+}
+
+.hva-card-icon {
+  flex-shrink: 0;
+  width: 3rem;
+  height: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hva-card-icon picture,
+.hva-card-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.hva-card-body {
+  flex: 1 1 auto;
+  min-width: 5rem;
+  overflow: hidden;
+}
+
+.hva-card-title {
+  margin: 0 0 0.25rem;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--spectrum-gray-900, #2d2d2d);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hva-card-description {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--spectrum-gray-700, #5e5e5e);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hva-card-cta {
+  flex-shrink: 0;
+}
+
+.hva-card-cta sp-button {
+  margin: 0;
+}

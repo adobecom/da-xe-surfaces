@@ -1,8 +1,38 @@
-/* 
- * Put project specific base styles here.
- *
- * Note: The proect does not load this file.
- *       You will need to load these using scripts.js.
- * 
- *
+/*
+ * Project base styles.
+ * Block spacing: .blockspacingtop-* / .blockspacingbottom-* (xxxs | xxs | xs | s | m | l | xl | xxl | xxxl | 4xl | 5xl).
+ * Full Spectrum scale 50–1000 (fallbacks when vars not loaded).
  */
+body {
+  margin: 0;
+}
+/* block spacing top */
+.block.blockspacingtop-xxxs { padding-top: var(--spectrum-spacing-50, 2px); }
+.block.blockspacingtop-xxs { padding-top: var(--spectrum-spacing-100, 4px); }
+.block.blockspacingtop-xs { padding-top: var(--spectrum-spacing-200, 8px); }
+.block.blockspacingtop-s { padding-top: var(--spectrum-spacing-300, 16px); }
+.block.blockspacingtop-m { padding-top: var(--spectrum-spacing-400, 24px); }
+.block.blockspacingtop-l { padding-top: var(--spectrum-spacing-500, 32px); }
+.block.blockspacingtop-xl { padding-top: var(--spectrum-spacing-600, 40px); }
+.block.blockspacingtop-xxl { padding-top: var(--spectrum-spacing-700, 48px); }
+.block.blockspacingtop-xxxl { padding-top: var(--spectrum-spacing-800, 56px); }
+.block.blockspacingtop-4xl { padding-top: var(--spectrum-spacing-900, 64px); }
+.block.blockspacingtop-5xl { padding-top: var(--spectrum-spacing-1000, 80px); }
+/* block spacing bottom */
+.block.blockspacingbottom-xxxs { padding-bottom: var(--spectrum-spacing-50, 2px); }
+.block.blockspacingbottom-xxs { padding-bottom: var(--spectrum-spacing-100, 4px); }
+.block.blockspacingbottom-xs { padding-bottom: var(--spectrum-spacing-200, 8px); }
+.block.blockspacingbottom-s { padding-bottom: var(--spectrum-spacing-300, 16px); }
+.block.blockspacingbottom-m { padding-bottom: var(--spectrum-spacing-400, 24px); }
+.block.blockspacingbottom-l { padding-bottom: var(--spectrum-spacing-500, 32px); }
+.block.blockspacingbottom-xl { padding-bottom: var(--spectrum-spacing-600, 40px); }
+.block.blockspacingbottom-xxl { padding-bottom: var(--spectrum-spacing-700, 48px); }
+.block.blockspacingbottom-xxxl { padding-bottom: var(--spectrum-spacing-800, 56px); }
+.block.blockspacingbottom-4xl { padding-bottom: var(--spectrum-spacing-900, 64px); }
+.block.blockspacingbottom-5xl { padding-bottom: var(--spectrum-spacing-1000, 80px); }
+
+.text-nowrap { white-space: nowrap; }
+
+.title-lg {
+  font: var(--spectrum-title-lg);
+}

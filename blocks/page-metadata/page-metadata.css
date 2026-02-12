@@ -1,0 +1,4 @@
+/* page-metadata: content is applied to body; block itself can be hidden or minimal */
+main .page-metadata.block {
+  display: none;
+}

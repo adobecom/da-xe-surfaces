@@ -1,33 +1,49 @@
-<!-- Modifying this file will impact your performance -->
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<script src="/scripts/fallback.js" nomodule></script>
 <script>
-  const libs = (() => {
-    const { hostname, search } = window.location;
-    if (!['.aem.', '.stage.', 'local'].some((i) => hostname.includes(i))) return '/libs';
-    const branch = new URLSearchParams(search).get('milolibs') || 'main';
-    if (branch === 'local') return 'http://localhost:6456/libs';
-    return branch.includes('--') ? `https://${branch}.aem.live/libs` : `https://${branch}--milo--adobecom.aem.live/libs`;
-  })();
-
-  const miloStyles = document.createElement('link');
-  const miloUtils = document.createElement('link');
-  const miloDecorate = document.createElement('link');
-
-  miloStyles.setAttribute('as', 'style');
-  miloStyles.setAttribute('href', `${libs}/styles/styles.css`);
-
-  [miloUtils, miloDecorate].forEach((tag) => {
-    tag.setAttribute('crossorigin', 'true');
-    tag.setAttribute('as', 'script');
-  })
-
-  miloUtils.setAttribute('href', `${libs}/utils/utils.js`);
-  miloDecorate.setAttribute('href', `${libs}/utils/decorate.js`);
-
-  [miloStyles, miloUtils, miloDecorate].forEach((tag) => tag.setAttribute('rel', 'preload'));
-  document.head.append(miloStyles, miloUtils, miloDecorate);
+    window.app = window.app || {};
+    window.app.BUILD_MODE = "dynamic";
+    window.hlx = window.hlx || {};
+    window.hlx.codeBasePath = '';
+    window.process = window.process || { env: {} };
+    if (typeof globalThis !== 'undefined') globalThis.process = window.process;
 </script>
-<script src="/scripts/scripts.js" type="module"></script>
-<style>body { display: none; }</style>
+<link rel="stylesheet" href="/styles/styles.css"/>
+<script type="importmap">
+{
+  "imports": {
+    "@spectrum-web-components/button": "https://ga.jspm.io/npm:@spectrum-web-components/button@1.11.2/src/index.js",
+    "@spectrum-web-components/button/": "https://ga.jspm.io/npm:@spectrum-web-components/button@1.11.2/",
+    "@spectrum-web-components/theme": "https://ga.jspm.io/npm:@spectrum-web-components/theme@1.11.2/src/index.js",
+    "@spectrum-web-components/theme/": "https://ga.jspm.io/npm:@spectrum-web-components/theme@1.11.2/",
+    "@lit-labs/observers/mutation-controller.js": "https://ga.jspm.io/npm:@lit-labs/observers@2.0.2/mutation-controller.js",
+    "@lit/reactive-element": "https://ga.jspm.io/npm:@lit/reactive-element@2.1.2/reactive-element.js",
+    "@lit/reactive-element/decorators/": "https://ga.jspm.io/npm:@lit/reactive-element@2.1.2/decorators/",
+    "@spectrum-web-components/base": "https://ga.jspm.io/npm:@spectrum-web-components/base@1.11.2/src/index.js",
+    "@spectrum-web-components/base/src/": "https://ga.jspm.io/npm:@spectrum-web-components/base@1.11.2/src/",
+    "@spectrum-web-components/clear-button/src/clear-button.css.js": "https://ga.jspm.io/npm:@spectrum-web-components/clear-button@1.11.2/src/clear-button.css.js",
+    "@spectrum-web-components/close-button/src/close-button.css.js": "https://ga.jspm.io/npm:@spectrum-web-components/close-button@1.11.2/src/close-button.css.js",
+    "@spectrum-web-components/core/components/progress-circle": "https://ga.jspm.io/npm:@spectrum-web-components/core@0.0.4/dist/components/progress-circle/index.js",
+    "@spectrum-web-components/core/shared/": "https://ga.jspm.io/npm:@spectrum-web-components/core@0.0.4/dist/shared/",
+    "@spectrum-web-components/icon": "https://ga.jspm.io/npm:@spectrum-web-components/icon@1.11.2/src/index.js",
+    "@spectrum-web-components/icon/src/spectrum-icon-cross.css.js": "https://ga.jspm.io/npm:@spectrum-web-components/icon@1.11.2/src/spectrum-icon-cross.css.js",
+    "@spectrum-web-components/icons-ui/icons/": "https://ga.jspm.io/npm:@spectrum-web-components/icons-ui@1.11.2/icons/",
+    "@spectrum-web-components/iconset/src/iconset-registry.js": "https://ga.jspm.io/npm:@spectrum-web-components/iconset@1.11.2/src/iconset-registry.js",
+    "@spectrum-web-components/progress-circle/sp-progress-circle.js": "https://ga.jspm.io/npm:@spectrum-web-components/progress-circle@1.11.2/sp-progress-circle.js",
+    "@spectrum-web-components/reactive-controllers/src/": "https://ga.jspm.io/npm:@spectrum-web-components/reactive-controllers@1.11.2/src/",
+    "@spectrum-web-components/shared/src/": "https://ga.jspm.io/npm:@spectrum-web-components/shared@1.11.2/src/",
+    "focus-visible": "https://ga.jspm.io/npm:focus-visible@5.2.1/dist/focus-visible.js",
+    "lit": "https://ga.jspm.io/npm:lit@3.3.2/index.js",
+    "lit/": "https://ga.jspm.io/npm:lit@3.3.2/",
+    "lit-element/lit-element.js": "https://ga.jspm.io/npm:lit-element@4.2.2/lit-element.js",
+    "lit-html": "https://ga.jspm.io/npm:lit-html@3.3.2/lit-html.js",
+    "lit-html/": "https://ga.jspm.io/npm:lit-html@3.3.2/"
+  }
+}
+</script>
+<script type="module">
+  import '@spectrum-web-components/theme/sp-theme.js';
+  import '@spectrum-web-components/theme/src/spectrum-two/themes.js';
+  import '@spectrum-web-components/button/sp-button.js';
+</script>
+<script type="module" src="/scripts/scripts.js"></script>
 <link rel="icon" href="data:,">
