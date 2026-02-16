@@ -1,5 +1,5 @@
-import { createTag, getBlockOptions } from '../../utils/utils.js';
-import { decorateButton } from '../../utils/decorate.js';
+import { createTag } from '../../utils/utils.js';
+import { decorateButton, decorateText, getButtonProps } from '../../utils/decorate.js';
 
 const CELLS = ['picture', 'title', 'description', 'link'];
 
@@ -17,8 +17,6 @@ export default async function decorate(block) {
     customElements.whenDefined('sp-theme'),
     customElements.whenDefined('sp-button'),
   ]);
-
-  const ctaOptions = getBlockOptions(block, 'cta');
 
   const pictureCell = getCellContent(block, 'picture');
   const titleCell = getCellContent(block, 'title');
@@ -39,16 +37,23 @@ export default async function decorate(block) {
   }
 
   const body = createTag('div', { class: 'hva-card-body' });
-  if (title) body.append(createTag('h3', { class: 'hva-card-title' }, title));
-  if (description) body.append(createTag('p', { class: 'hva-card-description' }, description));
+  if (title) {
+    const titleEl = createTag('h3', { class: 'hva-card-title' });
+    decorateText({ target: titleEl, text: title, className: 'text-nowrap' });
+    body.append(titleEl);
+  }
+  if (description) {
+    const descEl = createTag('p', { class: 'hva-card-description' });
+    decorateText({ target: descEl, text: description, className: 'text-nowrap' });
+    body.append(descEl);
+  }
 
   const ctaWrap = createTag('div', { class: 'hva-card-cta' });
   decorateButton({
     target: ctaWrap,
-    key: 'cta',
     descriptor: { value: ctaLabel },
     href,
-    ...ctaOptions,
+    ...getButtonProps(block, 'cta'),
   });
 
   const inner = createTag('div', { class: 'hva-card-inner' });

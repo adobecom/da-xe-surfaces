@@ -27,7 +27,22 @@ export default function decorate(block) {
       body.dataset.style = value;
       body.classList.add(value);
     } else if (key === 'padding') {
-      body.style.padding = value;
+      let spacingClass = value.toLowerCase().replace(/\s+/g, '-');
+      const fullRegex = /^(no|xxxs?|xxs?|xs|s|m|l|xl|xxl|xxxl|ivxl|vxl)-spacing(-top|-bottom)?$/;
+      const shortMatch = spacingClass.match(/^(no|xxxs?|xxs?|xs|s|m|l|xl|xxl|xxxl|ivxl|vxl)(-top|-bottom)?$/);
+      if (!fullRegex.test(spacingClass) && shortMatch) {
+        spacingClass = `${shortMatch[1]}-spacing${shortMatch[2] || ''}`;
+      }
+      if (fullRegex.test(spacingClass) || shortMatch) {
+        const theme = body.closest('sp-theme') || body.querySelector('sp-theme');
+        if (theme) {
+          theme.classList.add(spacingClass);
+        } else {
+          body.classList.add(spacingClass);
+        }
+      } else {
+        body.style.padding = value;
+      }
     } else {
       body.dataset[key.replace(/\s+/g, '-')] = value;
     }
