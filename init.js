@@ -1,19 +1,42 @@
-import { LitElement, html, css } from 'lit';
+import { LitElement, html } from 'lit';
+import { loadArea, setConfig } from './utils/utils.js';
 
-function getMiloLibsUrl() {
-  const { hostname, search } = window.location;
-  const isAemOrLocal = hostname.includes('.aem.') || hostname.includes('local');
-  if (!isAemOrLocal) {
-    return 'https://main--milo--adobecom.aem.live/libs';
-  }
-  const branch = new URLSearchParams(search).get('milolibs') || 'main';
-  if (branch === 'local') return 'http://localhost:6456/libs';
-  return branch.includes('--')
-    ? `https://${branch}.aem.live/libs`
-    : `https://${branch}--milo--adobecom.aem.live/libs`;
-}
+// SWC v1.11.2 — complan webpack alias overrides adobe-home-web's v0.47.2
+import '@spectrum-web-components/theme/sp-theme.js';
+import '@spectrum-web-components/theme/src/spectrum-two/themes.js';
+import '@spectrum-web-components/button/sp-button.js';
+
+// Static block JS imports (webpack can't dynamically resolve via file: symlink)
+import hvaCardDecorate from './blocks/hva-card/hva-card.js';
+import vimeoDecorate from './blocks/vimeo/vimeo.js';
+import pageMetadataDecorate from './blocks/page-metadata/page-metadata.js';
+import fragmentDecorate from './blocks/fragment/fragment.js';
+
+// Static CSS imports — webpack bundles these (runtime loadCSS would 404 in nest)
+import './styles/styles.css';
+import './blocks/hva-card/hva-card.css';
+import './blocks/vimeo/vimeo.css';
+import './blocks/page-metadata/page-metadata.css';
+
+// Skip runtime CSS loading (files aren't served by nest, webpack already bundled them)
+window.app = window.app || {};
+window.app.BUILD_MODE = 'builtin';
+
+// Block registry — loadBlock checks this before attempting dynamic import
+window.xeBlockRegistry = {
+  'hva-card': hvaCardDecorate,
+  vimeo: vimeoDecorate,
+  'page-metadata': pageMetadataDecorate,
+  fragment: fragmentDecorate,
+};
 
 export const XE_SITES_TAG = 'xe-sites';
+
+const config = {
+  contentRoot: '/',
+  codeRoot: '/',
+  miloLibs: window.location.origin,
+};
 
 export default class XeSites extends LitElement {
   static properties = {
@@ -21,17 +44,10 @@ export default class XeSites extends LitElement {
     loadError: { type: String },
   };
 
-  static styles = css`
-    :host {
-      display: block;
-      position: relative;
-    }
-
-    #fragment-container {
-      all: initial;
-      display: block;
-    }
-  `;
+  // Render in light DOM so block CSS and SWC styles apply
+  createRenderRoot() {
+    return this;
+  }
 
   constructor() {
     super();
@@ -59,6 +75,10 @@ export default class XeSites extends LitElement {
     }
 
     try {
+      window.hlx = window.hlx || {};
+      window.hlx.codeBasePath = '';
+      setConfig(config);
+
       const response = await fetch(url);
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -72,10 +92,16 @@ export default class XeSites extends LitElement {
 
       this.clearFragmentContent();
 
-      const container = this.shadowRoot.getElementById('fragment-container');
-      if (container) {
-        container.appendChild(main);
-      }
+      // Wrap in sp-theme so SWC components get Spectrum tokens
+      const theme = document.createElement('sp-theme');
+      theme.setAttribute('scale', 'medium');
+      theme.setAttribute('color', 'light');
+      theme.setAttribute('system', 'spectrum-two');
+      theme.appendChild(main);
+
+      this.querySelector('#fragment-container').appendChild(theme);
+
+      await loadArea(main);
     } catch (error) {
       this.loadError = error instanceof Error ? error.message : String(error);
       this.clearFragmentContent();
@@ -85,10 +111,9 @@ export default class XeSites extends LitElement {
   }
 
   clearFragmentContent() {
-    const container = this.shadowRoot?.getElementById('fragment-container');
+    const container = this.querySelector('#fragment-container');
     if (container) {
-      const existing = container.querySelector('main');
-      if (existing) existing.remove();
+      container.innerHTML = '';
     }
   }
 
@@ -96,11 +121,7 @@ export default class XeSites extends LitElement {
     if (this.loadError) {
       return html`<p role="alert">Failed to load fragment: ${this.loadError}</p>`;
     }
-    const miloLibs = getMiloLibsUrl();
-    return html`
-      <link rel="stylesheet" href="${miloLibs}/styles/styles.css">
-      <div id="fragment-container"></div>
-    `;
+    return html`<div id="fragment-container"></div>`;
   }
 }
 

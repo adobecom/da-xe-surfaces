@@ -13,7 +13,7 @@ function getCellContent(block, name) {
 }
 
 export default async function decorate(block) {
-  await Promise.all([
+    await Promise.all([
     customElements.whenDefined('sp-theme'),
     customElements.whenDefined('sp-button'),
   ]);
