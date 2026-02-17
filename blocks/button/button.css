@@ -1,0 +1,9 @@
+.button.block .button-wrapper {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spectrum-spacing-200, 8px);
+}
+
+.button.block .button-wrapper sp-button {
+  flex-shrink: 0;
+}

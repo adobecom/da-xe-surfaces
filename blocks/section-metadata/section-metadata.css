@@ -1,0 +1,261 @@
+.section-metadata {
+  display: none;
+}
+
+.section.darkest {
+  background-color: var(--spectrum-gray-900, #2d2d2d);
+  color: var(--spectrum-gray-50, #fff);
+}
+
+.section.dark {
+  background-color: var(--spectrum-gray-800, #3d3d3d);
+  color: var(--spectrum-gray-50, #fff);
+}
+
+.section.light {
+  background-color: var(--spectrum-gray-50, #fff);
+  color: var(--spectrum-gray-900, #2d2d2d);
+}
+
+.section.xxxl-spacing-static { padding: var(--spectrum-spacing-800, 56px) 0; }
+.section.xxl-spacing-static { padding: var(--spectrum-spacing-700, 48px) 0; }
+.section.xl-spacing-static { padding: var(--spectrum-spacing-600, 40px) 0; }
+
+.section.xxxl-spacing-top-static { padding-top: var(--spectrum-spacing-800, 56px); }
+.section.xxl-spacing-top-static { padding-top: var(--spectrum-spacing-700, 48px); }
+.section.xl-spacing-top-static { padding-top: var(--spectrum-spacing-600, 40px); }
+
+.section.xxxl-spacing-bottom-static { padding-bottom: var(--spectrum-spacing-800, 56px); }
+.section.xxl-spacing-bottom-static { padding-bottom: var(--spectrum-spacing-700, 48px); }
+.section.xl-spacing-bottom-static { padding-bottom: var(--spectrum-spacing-600, 40px); }
+
+.section.xxxl-spacing { padding: var(--spectrum-spacing-800, 56px) 0; }
+.section.xxl-spacing { padding: var(--spectrum-spacing-700, 48px) 0; }
+.section.xl-spacing { padding: var(--spectrum-spacing-600, 40px) 0; }
+.section.l-spacing { padding: var(--spectrum-spacing-500, 32px) 0; }
+.section.m-spacing { padding: var(--spectrum-spacing-400, 24px) 0; }
+.section.s-spacing { padding: var(--spectrum-spacing-300, 16px) 0; }
+.section.xs-spacing { padding: var(--spectrum-spacing-200, 8px) 0; }
+.section.xxs-spacing { padding: var(--spectrum-spacing-100, 4px) 0; }
+
+.section.xxxl-spacing-top { padding-top: var(--spectrum-spacing-800, 56px); }
+.section.xxl-spacing-top { padding-top: var(--spectrum-spacing-700, 48px); }
+.section.xl-spacing-top { padding-top: var(--spectrum-spacing-600, 40px); }
+.section.l-spacing-top { padding-top: var(--spectrum-spacing-500, 32px); }
+.section.m-spacing-top { padding-top: var(--spectrum-spacing-400, 24px); }
+.section.s-spacing-top { padding-top: var(--spectrum-spacing-300, 16px); }
+.section.xs-spacing-top { padding-top: var(--spectrum-spacing-200, 8px); }
+.section.xxs-spacing-top { padding-top: var(--spectrum-spacing-100, 4px); }
+
+.section.xxxl-spacing-bottom { padding-bottom: var(--spectrum-spacing-800, 56px); }
+.section.xxl-spacing-bottom { padding-bottom: var(--spectrum-spacing-700, 48px); }
+.section.xl-spacing-bottom { padding-bottom: var(--spectrum-spacing-600, 40px); }
+.section.l-spacing-bottom { padding-bottom: var(--spectrum-spacing-500, 32px); }
+.section.m-spacing-bottom { padding-bottom: var(--spectrum-spacing-400, 24px); }
+.section.s-spacing-bottom { padding-bottom: var(--spectrum-spacing-300, 16px); }
+.section.xs-spacing-bottom { padding-bottom: var(--spectrum-spacing-200, 8px); }
+.section.xxs-spacing-bottom { padding-bottom: var(--spectrum-spacing-100, 4px); }
+
+.section.xxxl-padding { padding: var(--spectrum-spacing-800, 56px); }
+.section.xxl-padding { padding: var(--spectrum-spacing-700, 48px); }
+.section.xl-padding { padding: var(--spectrum-spacing-600, 40px); }
+.section.l-padding { padding: var(--spectrum-spacing-500, 32px); }
+.section.m-padding { padding: var(--spectrum-spacing-400, 24px); }
+.section.s-padding { padding: var(--spectrum-spacing-300, 16px); }
+.section.xs-padding { padding: var(--spectrum-spacing-200, 8px); }
+.section.xxs-padding { padding: var(--spectrum-spacing-100, 4px); }
+
+/* Section defines alignment: style "center" applies to these content types. Add selectors for new blocks as needed. */
+.section.center h1,
+.section.center h2,
+.section.center h3,
+.section.center h4,
+.section.center h5,
+.section.center h6,
+.section.center p,
+.section.center .font-block-content {
+  text-align: center;
+}
+
+.section.divider {
+  border-bottom: 1px solid var(--spectrum-gray-300, #c4c4c4);
+}
+
+.section.divider-inherit {
+  border-bottom: 1px solid;
+}
+
+.section.center[class*='-up'] {
+  justify-items: center;
+}
+
+.section[class*='-up'].no-gap {
+  gap: 0;
+}
+
+.section[class*='-up'].xxs-gap {
+  gap: var(--spectrum-spacing-100, 4px);
+}
+
+.section[class*='-up'].xs-gap {
+  gap: var(--spectrum-spacing-200, 8px);
+}
+
+.section[class*='-up'].s-gap {
+  gap: var(--spectrum-spacing-300, 16px);
+}
+
+.section[class*='-up'].l-gap {
+  gap: var(--spectrum-spacing-500, 32px);
+}
+
+.section[class*='-up'].xl-gap {
+  gap: var(--spectrum-spacing-600, 40px);
+}
+
+.section[class*='-up'].xxl-gap {
+  gap: var(--spectrum-spacing-700, 48px);
+}
+
+.section[class*='-up'].xxxl-gap {
+  gap: var(--spectrum-spacing-800, 56px);
+}
+
+.section.two-up,
+.section.three-up,
+.section.four-up,
+.section.five-up {
+  display: grid;
+  gap: var(--spectrum-spacing-400, 24px);
+  align-items: start;
+  padding-left: var(--grid-margins-width);
+  padding-right: var(--grid-margins-width);
+}
+
+.section.two-up {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.section.three-up {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.section.four-up {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.section.five-up {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.section[class*='grid-width-'] {
+  padding-left: var(--grid-margins-width);
+  padding-right: var(--grid-margins-width);
+  display: grid;
+  gap: var(--spectrum-spacing-400, 24px);
+}
+
+.section[class*='grid-width-'] > .content,
+main > .section[class*='-up'] > .content {
+  max-width: initial;
+  margin: 0;
+}
+
+.section.masonry-layout {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: var(--spectrum-spacing-300, 16px);
+  padding-left: var(--grid-margins-width);
+  padding-right: var(--grid-margins-width);
+}
+
+.section.masonry-layout > div[class*='grid-'],
+.section.masonry-layout > div[class*='grid-'] > div.fragment,
+.section.masonry-layout > div[class*='grid-'] > div.fragment > div.section {
+  display: grid;
+}
+
+/* show-more-button */
+.section .show-more-button {
+  display: flex;
+  justify-content: center;
+  padding: var(--spectrum-spacing-200, 8px) 0;
+  gap: var(--spectrum-spacing-300, 16px);
+  border-radius: var(--spectrum-corner-radius-200, 8px);
+}
+
+.section .show-more-button button {
+  background-color: inherit;
+  border: none;
+  color: var(--spectrum-gray-900, #2d2d2d);
+  text-decoration: none;
+  cursor: pointer;
+  font-size: var(--spectrum-body-size-m, 1rem);
+  font-weight: var(--spectrum-bold-font-weight, 700);
+  line-height: var(--spectrum-body-line-height, var(--spectrum-line-height-200, 1.5));
+  padding: var(--spectrum-spacing-100, 4px) var(--spectrum-spacing-300, 16px);
+  border-radius: var(--spectrum-corner-radius-300, 9999px);
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+}
+
+.section .show-more-button.hidden {
+  display: none;
+}
+
+.section .show-more-icon {
+  display: inline-flex;
+  align-items: center;
+}
+
+.section.two-up {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.section.three-up {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.section.four-up {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.section.five-up {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.section.grid-template-columns-1-2 {
+  grid-template-columns: 1fr 2fr;
+}
+
+.section.grid-template-columns-2-1 {
+  grid-template-columns: 2fr 1fr;
+}
+
+.section.grid-template-columns-1-3 {
+  grid-template-columns: 1fr 3fr;
+}
+
+.section.grid-template-columns-3-1 {
+  grid-template-columns: 3fr 1fr;
+}
+
+.section.masonry-layout {
+  grid-template-columns: repeat(12, 1fr);
+}
+
+.section.masonry-layout .grid-full-width {grid-column: span 12; }
+.section.masonry-layout .grid-half-width {grid-column: span 6; }
+.section.masonry-layout .grid-span-1 {grid-column: span 1; }
+.section.masonry-layout .grid-span-2 {grid-column: span 2; }
+.section.masonry-layout .grid-span-3 {grid-column: span 3; }
+.section.masonry-layout .grid-span-4 {grid-column: span 4; }
+.section.masonry-layout .grid-span-5 {grid-column: span 5; }
+.section.masonry-layout .grid-span-6 {grid-column: span 6; }
+.section.masonry-layout .grid-span-7 {grid-column: span 7; }
+.section.masonry-layout .grid-span-8 {grid-column: span 8; }
+.section.masonry-layout .grid-span-9 {grid-column: span 9; }
+.section.masonry-layout .grid-span-10 {grid-column: span 10; }
+.section.masonry-layout .grid-span-11 {grid-column: span 11; }
+

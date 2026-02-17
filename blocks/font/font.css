@@ -1,0 +1,9 @@
+/* When block has no text, it only configures the section: hide from layout. */
+.font.block.font-block-metadata-only {
+  display: none;
+}
+
+/* Wrapper for rendered text; typography is applied via decorateFont (preset class or inline style). */
+.font-block-content {
+  margin: 0;
+}
