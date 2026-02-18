@@ -14,10 +14,6 @@ const AUTO_BLOCKS = [
   // { caas: '/tools/caas' },
   // { faas: '/tools/faas' },
   { fragment: '/de-xe-surfaces/', styles: false },
-  // { instagram: 'https://www.instagram.com' },
-  // { slideshare: 'https://www.slideshare.net', styles: false },
-  // { tiktok: 'https://www.tiktok.com', styles: false },
-  // { twitter: 'https://twitter.com' },
   { vimeo: 'https://vimeo.com' },
   { vimeo: 'https://player.vimeo.com' },
   { youtube: 'https://www.youtube.com' },
@@ -88,7 +84,7 @@ function getEnv(conf) {
   /* c8 ignore stop */
 }
 
-function getMetadata(name, doc = document) {
+export function getMetadata(name, doc = document) {
   const attr = name && name.includes(':') ? 'property' : 'name';
   const meta = doc.head.querySelector(`meta[${attr}="${name}"]`);
   return meta && meta.content;
@@ -348,7 +344,7 @@ const decorateCopyLink = (a, evt) => {
   });
 };
 
-function convertStageLinks({ anchors, config, hostname, href }) {
+export function convertStageLinks({ anchors, config, hostname, href }) {
   const { env, stageDomainsMap, locale } = config;
   if (env?.name === 'prod' || !stageDomainsMap) return;
   const matchedRules = Object.entries(stageDomainsMap)
@@ -374,11 +370,89 @@ function convertStageLinks({ anchors, config, hostname, href }) {
   });
 }
 
-export function decorateLinks(el) {
+let urlMappingCache = null;
+let urlMappingPromise = null;
+
+/**
+ * Load URL shorthand mapping JSON for the current page
+ * @returns {Promise<Object>} Mapping object with shorthand -> ccweb URL
+ */
+async function loadUrlMapping() {
+  if (urlMappingCache) return urlMappingCache;
+  if (urlMappingPromise) return urlMappingPromise;
+
+  urlMappingPromise = (async () => {
+    try {
+      const path = window.location.pathname;
+      const pathParts = path.split('/').filter(Boolean);
+      const pageName = pathParts.pop()?.replace('.html', '') || 'index';
+      const basePath = pathParts.length ? `/${pathParts.join('/')}/` : '/';
+      const mappingUrl = `${basePath}${pageName}-url-shorthand-mapping.json`;
+      
+      const response = await fetch(mappingUrl);
+      if (!response.ok) {
+        return {};
+      }
+      
+      const json = await response.json();
+      // Convert array format to object for easy lookup
+      const mapping = {};
+      if (json.data && Array.isArray(json.data)) {
+        json.data.forEach((item) => {
+          if (item.shorthand && item.ccweb) {
+            mapping[item.shorthand] = item.ccweb;
+          }
+        });
+      }
+      
+      urlMappingCache = mapping;
+      return mapping;
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.warn('Failed to load URL mapping:', error);
+      return {};
+    }
+  })();
+
+  return urlMappingPromise;
+}
+
+/**
+ * Resolve a shorthand to its actual URL
+ * @param {string} href - Original href (could be shorthand or full URL)
+ * @returns {Promise<string>} Resolved URL
+ */
+async function resolveShorthandUrl(href) {
+  // If it's already a full URL, return as-is
+  if (!href || href.startsWith('http://') || href.startsWith('https://') 
+      || href.startsWith('/') || href.startsWith('#') || href.startsWith('mailto:')
+      || href.startsWith('tel:')) {
+    return href;
+  }
+
+  // Try to resolve as shorthand
+  const mapping = await loadUrlMapping();
+  return mapping[href] || href;
+}
+
+export async function decorateLinks(el) {
   const config = getConfig();
   decorateImageLinks(el);
   const anchors = el.getElementsByTagName('a');
   const { hostname, href } = window.location;
+  
+  // Resolve all shorthands first
+  const resolvePromises = [...anchors].map(async (a) => {
+    const originalHref = a.getAttribute('href');
+    if (originalHref) {
+      const resolvedHref = await resolveShorthandUrl(originalHref);
+      if (resolvedHref !== originalHref) {
+        a.href = resolvedHref;
+      }
+    }
+  });
+  await Promise.all(resolvePromises);
+  
   const links = [...anchors].reduce((rdx, a) => {
     appendHtmlToLink(a);
     if (a.href.includes('http:')) a.setAttribute('data-http-link', 'true');
@@ -420,13 +494,51 @@ export function decorateLinks(el) {
       (async () => {
       })();
     }
-    // Append aria-label
-    const pipeRegex = /\s?\|([^|]*)$/;
-    if (pipeRegex.test(a.textContent) && !/\.[a-z]+/i.test(a.textContent)) {
-      const node = [...a.childNodes].reverse()[0];
-      const ariaLabel = node.textContent.match(pipeRegex)[1];
-      node.textContent = node.textContent.replace(pipeRegex, '');
-      a.setAttribute('aria-label', ariaLabel.trim());
+    // Extract attributes using pipe syntax: "Text | aria: Label | id: hero-cta | name: Get Started"
+    // Maps to: aria-label, data-content-id, data-content-name
+    const textContent = a.textContent || '';
+    if (textContent.includes('|')) {
+      const parts = textContent.split('|').map(p => p.trim());
+      if (parts.length > 1) {
+        let hasAttributes = false;
+        
+        for (let i = 1; i < parts.length; i++) {
+          const part = parts[i];
+          
+          const ariaMatch = part.match(/^aria\s*:\s*(.+)$/i);
+          if (ariaMatch) {
+            a.setAttribute('aria-label', ariaMatch[1].trim());
+            hasAttributes = true;
+            continue;
+          }
+          
+          const idMatch = part.match(/^id\s*:\s*(.+)$/i);
+          if (idMatch) {
+            a.setAttribute('data-content-id', idMatch[1].trim());
+            hasAttributes = true;
+            continue;
+          }
+          
+          const nameMatch = part.match(/^name\s*:\s*(.+)$/i);
+          if (nameMatch) {
+            a.setAttribute('data-content-name', nameMatch[1].trim());
+            hasAttributes = true;
+          }
+        }
+        
+        // Remove the attribute parts from all text nodes
+        if (hasAttributes) {
+          const walker = document.createTreeWalker(a, NodeFilter.SHOW_TEXT);
+          let node;
+          while (node = walker.nextNode()) {
+            if (node.textContent.includes('|')) {
+              const pipeIndex = node.textContent.indexOf('|');
+              node.textContent = node.textContent.substring(0, pipeIndex).trim();
+              break;
+            }
+          }
+        }
+      }
     }
 
     return rdx;
@@ -435,7 +547,7 @@ export function decorateLinks(el) {
   return links;
 }
 
-function filterDuplicatedLinkBlocks(blocks) {
+export function filterDuplicatedLinkBlocks(blocks) {
   if (!blocks?.length) return [];
   const uniqueModalKeys = new Set();
   const uniqueBlocks = [];
@@ -476,8 +588,8 @@ export function getBlockOptions(block, prefix) {
   return result;
 }
 
-function decorateSection(section, idx) {
-  let links = decorateLinks(section);
+async function decorateSection(section, idx) {
+  let links = await decorateLinks(section);
   // decorateDefaults(section);
   const blocks = section.querySelectorAll(':scope > div[class]:not(.content)');
   blocks.forEach((el) => { if (!el.classList.contains('block')) el.classList.add('block'); });
@@ -522,7 +634,7 @@ async function resolveInlineFrags(section) {
   const { default: loadInlineFrags } = await import('../blocks/fragment/fragment.js');
   const fragPromises = inlineFrags.map((link) => loadInlineFrags(link));
   await Promise.all(fragPromises);
-  const newlyDecoratedSection = decorateSection(section.el, section.idx);
+  const newlyDecoratedSection = await decorateSection(section.el, section.idx);
   section.blocks = newlyDecoratedSection.blocks;
   section.preloadLinks = newlyDecoratedSection.preloadLinks;
 }
@@ -551,14 +663,20 @@ const findReplaceableNodes = (area) => {
 };
 
 
-async function decoratePlaceholders(area, config) {
+
+let placeholderRequest;
+export async function decoratePlaceholders(area, config) {
   if (!area) return;
   const nodes = findReplaceableNodes(area);
   if (!nodes.length) return;
   area.dataset.hasPlaceholders = 'true';
+  const placeholderPath = `${config.locale?.contentRoot}/placeholders.json`;
+  placeholderRequest = placeholderRequest
+    || customFetch({ resource: placeholderPath, withCacheRules: true })
+      .catch(() => ({}));
 }
 
-function loadLink(href, { as, callback, crossorigin, rel, fetchpriority } = {}) {
+export function loadLink(href, { as, callback, crossorigin, rel, fetchpriority } = {}) {
   let link = document.head.querySelector(`link[href="${href}"]`);
   if (!link) {
     link = document.createElement('link');
@@ -578,7 +696,7 @@ function loadLink(href, { as, callback, crossorigin, rel, fetchpriority } = {}) 
   return link;
 }
 
-function loadStyle(href, callback) {
+export function loadStyle(href, callback) {
   if (window.app && window.app.BUILD_MODE === "builtin") {
     return null;
   }
@@ -658,7 +776,7 @@ export async function loadBlock(block) {
   return block;
 }
 
-function partition(arr, fn) {
+export function partition(arr, fn) {
   return arr.reduce(
     (acc, val, i, ar) => {
       acc[fn(val, i, ar) ? 0 : 1].push(val);
@@ -692,15 +810,16 @@ async function processSection(section, config, isDoc) {
   return section.blocks;
 }
 
-function decorateSections(el, isDoc) {
+async function decorateSections(el, isDoc) {
   const selector = isDoc ? 'body > main > div' : ':scope > div';
-  return [...el.querySelectorAll(selector)].map(decorateSection);
+  const sectionElements = [...el.querySelectorAll(selector)];
+  return Promise.all(sectionElements.map((section, idx) => decorateSection(section, idx)));
 }
 
 export async function loadArea(area = document) {
   const isDoc = area === document;
   const config = getConfig();
-  const sections = decorateSections(area, isDoc);
+  const sections = await decorateSections(area, isDoc);
 
   // Apply page-metadata first so body classes/styles are set before other blocks
   const pageMetaBlocks = sections.flatMap((s) => s.blocks).filter((b) => b.classList?.[0] === 'page-metadata');
@@ -826,7 +945,7 @@ export async function customFetch({ resource, withCacheRules }) {
   });
 }
 
-function createIntersectionObserver({ el, callback, once = true, options = {} }) {
+export function createIntersectionObserver({ el, callback, once = true, options = {} }) {
   const io = new IntersectionObserver((entries, observer) => {
     entries.forEach(async (entry) => {
       if (entry.isIntersecting) {
@@ -839,7 +958,7 @@ function createIntersectionObserver({ el, callback, once = true, options = {} })
   return io;
 }
 
-function isInTextNode(node) {
+export function isInTextNode(node) {
   return (node.parentElement.childNodes.length > 1 && node.parentElement.firstChild.tagName === 'A') || node.parentElement.firstChild.nodeType === Node.TEXT_NODE;
 }
 

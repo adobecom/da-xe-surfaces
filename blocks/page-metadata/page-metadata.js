@@ -1,6 +1,10 @@
 /**
  * Page-metadata block: key/value rows (e.g. Style | Value) are applied to the whole page.
- * Supported keys: "class" (or "classes"), "style" → added to document.body (classes or data-style).
+ * Supported keys:
+ * - "class" (or "classes") → added to document.body
+ * - "style" → if spacing pattern (e.g. "xl-spacing", "m-spacing-top"), applied to sp-theme/body;
+ *             otherwise sets data-style and adds as class
+ * - "analyticsParams" → pipe syntax "name: Page Name | id: page-id" sets data-content-name and data-content-id
  */
 export default function decorate(block) {
   const rows = [...block.children];
@@ -24,25 +28,36 @@ export default function decorate(block) {
     if (key === 'class' || key === 'classes') {
       value.split(/\s+/).filter(Boolean).forEach((c) => body.classList.add(c));
     } else if (key === 'style') {
-      body.dataset.style = value;
-      body.classList.add(value);
-    } else if (key === 'padding') {
-      let spacingClass = value.toLowerCase().replace(/\s+/g, '-');
-      const fullRegex = /^(no|xxxs?|xxs?|xs|s|m|l|xl|xxl|xxxl|ivxl|vxl)-spacing(-top|-bottom)?$/;
-      const shortMatch = spacingClass.match(/^(no|xxxs?|xxs?|xs|s|m|l|xl|xxl|xxxl|ivxl|vxl)(-top|-bottom)?$/);
-      if (!fullRegex.test(spacingClass) && shortMatch) {
-        spacingClass = `${shortMatch[1]}-spacing${shortMatch[2] || ''}`;
-      }
-      if (fullRegex.test(spacingClass) || shortMatch) {
+      // Check if it's a spacing pattern
+      const spacingPattern = /^(no|xxxs?|xxs?|xs|s|m|l|xl|xxl|xxxl|ivxl|vxl)-spacing(-top|-bottom)?$/;
+      if (spacingPattern.test(value.toLowerCase())) {
         const theme = body.closest('sp-theme') || body.querySelector('sp-theme');
         if (theme) {
-          theme.classList.add(spacingClass);
+          theme.classList.add(value.toLowerCase());
         } else {
-          body.classList.add(spacingClass);
+          body.classList.add(value.toLowerCase());
         }
       } else {
-        body.style.padding = value;
+        // Not a spacing pattern, treat as theme/style name
+        body.dataset.style = value;
+        body.classList.add(value);
       }
+    } else if (key === 'analyticsparams' || key === 'analytics-params') {
+      // Parse pipe syntax: "name: Page Name | id: page-id"
+      const parts = value.split('|').map(p => p.trim());
+      
+      parts.forEach((part) => {
+        const idMatch = part.match(/^id\s*:\s*(.+)$/i);
+        if (idMatch) {
+          body.setAttribute('data-content-id', idMatch[1].trim());
+          return;
+        }
+        
+        const nameMatch = part.match(/^name\s*:\s*(.+)$/i);
+        if (nameMatch) {
+          body.setAttribute('data-content-name', nameMatch[1].trim());
+        }
+      });
     } else {
       body.dataset[key.replace(/\s+/g, '-')] = value;
     }

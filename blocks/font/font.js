@@ -3,7 +3,10 @@ import { decorateFontPreset, decorateFontStyle } from '../../utils/decorate.js';
 /**
  * Block rows:
  * - font: predefined class only (e.g. heading-xl, body-m). See styles.css typography.
- * - style: optional CSS (font-weight, font-size, line-height, etc.). Comma-separated, supports var(--spectrum-*).
+ * - style: optional CSS tokens or declarations. Comma-separated, supports:
+ *   • Shorthand: font-size-400, font-weight-700, line-height-400
+ *   • Alignment: center, left, right, justify
+ *   • Full declarations: font-size: 1rem, font-weight: 700
  * - text: optional content to render as HTML; if present, block is visible with font preset/style applied.
  */
 function getFontOptions(el) {

@@ -2,7 +2,15 @@ import { createTag, getConfig, getFederatedContentRoot } from '../../utils/utils
 
 let captionsLangMapPromise = null;
 
-const logError = (msg, error) => window.lana.log(`${msg}: ${error}`);
+const logError = (msg, error) => {
+  const errorMsg = `${msg}: ${error}`;
+  if (window.lana?.log) {
+    window.lana.log(errorMsg);
+  } else {
+    // eslint-disable-next-line no-console
+    console.error(errorMsg);
+  }
+};
 
 const updateCaptionsLang = (url, geo, captionsLangMap) => {
   if (geo && captionsLangMap) {
@@ -15,8 +23,30 @@ const updateCaptionsLang = (url, geo, captionsLangMap) => {
   return url.toString();
 };
 
-const createIframe = (a, href) => {
-  const videoHref = href || a.href;
+const createIframe = (block, href) => {
+  console.log('createIframe called with:', block.tagName, block.className);
+  
+  const link = block.tagName === 'A' ? block : block.querySelector('a');
+  const videoHref = href || (link && link.href);
+
+  // Extract height class from block or parent (for auto-blocks, height is on parent div)
+  let heightClass = null;
+  if (block.tagName !== 'A') {
+    // Regular block: height class is on the block itself
+    const classes = [...block.classList];
+    console.log('Block classes:', classes);
+    heightClass = classes.find(c => c.match(/^height-\d+$/));
+    console.log('Found height class on block:', heightClass);
+  } else {
+    // Auto-block: check parent element for height class
+    const parent = block.parentElement;
+    if (parent && parent.classList) {
+      const parentClasses = [...parent.classList];
+      console.log('Parent classes:', parentClasses);
+      heightClass = parentClasses.find(c => c.match(/^height-\d+$/));
+      console.log('Found height class on parent:', heightClass);
+    }
+  }
 
   const iframe = createTag('iframe', {
     src: videoHref,
@@ -27,7 +57,31 @@ const createIframe = (a, href) => {
     loading: 'lazy',
   });
   const embed = createTag('div', { class: 'boost-video' }, iframe);
-  a.insertAdjacentElement('afterend', embed);
+  
+  // Apply height class to embed if found
+  if (heightClass) {
+    console.log('Applying height class to embed:', heightClass);
+    embed.classList.add(heightClass);
+  } else {
+    console.log('No height class found');
+  }
+  
+  if (block.tagName === 'A') {
+    // First call: link → replace with div
+    // Preserve height class on the new div if found
+    const div = createTag('div', { class: 'adobetv hide-video' });
+    if (heightClass) {
+      div.classList.add(heightClass);
+    }
+    div.appendChild(embed);
+    if (block.parentNode) block.parentNode.replaceChild(div, block);
+  } else {
+    // Second call: already a div → update contents
+    block.innerHTML = '';
+    block.appendChild(embed);
+  }
+
+  console.log('Final embed classes:', [...embed.classList]);
 
   const idMatch = videoHref.match(/\/v\/(\d+)/);
   const videoId = idMatch ? idMatch[1] : null;
@@ -65,32 +119,39 @@ const createIframe = (a, href) => {
     });
   }, { rootMargin: '0px' });
   io.observe(iframe);
-
-  a.remove();
 };
 
-const createIframeWithCaptions = (a, url, geo) => {
+const createIframeWithCaptions = (block, url, geo) => {
   if (!captionsLangMapPromise) {
-    createIframe(a);
+    createIframe(block);
   } else {
     captionsLangMapPromise?.then((resp) => {
       if (resp?.data) {
         const videoHref = updateCaptionsLang(url, geo, resp.data);
-        createIframe(a, videoHref);
+        createIframe(block, videoHref);
       } else {
-        createIframe(a);
+        createIframe(block);
       }
     }).catch((e) => {
       logError('Could not get atv captions', e);
-      createIframe(a);
+      createIframe(block);
     });
   }
 };
 
-export default function init(a) {
-  a.classList.add('hide-video');
+export default function init(block) {
+  block.classList.add('hide-video');
+  
+  // Get the link element (could be the block itself if it's an <a>, or a child link)
+  const link = block.tagName === 'A' ? block : block.querySelector('a');
+  
+  // Validate the link element and href
+  if (!link || !link.href || link.href === 'undefined' || link.href.trim() === '' || !link.href.includes('://')) {
+    return;
+  }
 
-    const url = new URL(a.href);
+  try {
+    const url = new URL(link.href);
     const { atvCaptionsKey, locale } = getConfig();
     const geo = (locale?.prefix || '').replace('/langstore', '').replace('/', '');
     const federalCR = atvCaptionsKey && getFederatedContentRoot();
@@ -105,9 +166,11 @@ export default function init(a) {
           return res.json();
         });
       }
-      createIframeWithCaptions(a, url, geo);
+      createIframeWithCaptions(block, url, geo);
     } else {
-      createIframe(a);
+      createIframe(block);
     }
-  
+  } catch (error) {
+    logError('AdobeTV init', error);
+  }
 }

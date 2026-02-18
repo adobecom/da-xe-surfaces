@@ -51,6 +51,50 @@ function kebabToCamel(str) {
   return str.replace(/-([a-z])/gi, (_, c) => c.toUpperCase());
 }
 
+/**
+ * Extract attributes from text using pipe syntax.
+ * Supports: "Text | aria: Label | id: hero-cta | name: Get Started"
+ * Maps to: aria-label, data-content-id, data-content-name
+ * @param {string} text - Text that may contain attributes
+ * @returns {{ text: string, ariaLabel: string | null, contentId: string | null, contentName: string | null }}
+ */
+export function extractPipeAttributes(text) {
+  if (!text) return { text: '', ariaLabel: null, contentId: null, contentName: null };
+  
+  const parts = text.split('|').map(p => p.trim());
+  if (parts.length === 1) {
+    return { text, ariaLabel: null, contentId: null, contentName: null };
+  }
+  
+  const cleanText = parts[0];
+  let ariaLabel = null;
+  let contentId = null;
+  let contentName = null;
+  
+  for (let i = 1; i < parts.length; i++) {
+    const part = parts[i];
+    
+    const ariaMatch = part.match(/^aria\s*:\s*(.+)$/i);
+    if (ariaMatch) {
+      ariaLabel = ariaMatch[1].trim();
+      continue;
+    }
+    
+    const idMatch = part.match(/^id\s*:\s*(.+)$/i);
+    if (idMatch) {
+      contentId = idMatch[1].trim();
+      continue;
+    }
+    
+    const nameMatch = part.match(/^name\s*:\s*(.+)$/i);
+    if (nameMatch) {
+      contentName = nameMatch[1].trim();
+    }
+  }
+  
+  return { text: cleanText, ariaLabel, contentId, contentName };
+}
+
 /** Preset keys that map to .{key} classes in styles.css (e.g. .heading-xl, .body-m). Use Font block or decorateFont() anywhere. */
 export const FONT_PRESET_KEYS = new Set([
   'heading-xxxl', 'heading-xxl', 'heading-xl', 'heading-l', 'heading-m', 'heading-s', 'heading-xs', 'heading-xxs',
@@ -95,6 +139,7 @@ function splitCssDeclarations(str) {
  * - "font-size-400" → font-size: var(--spectrum-font-size-400)
  * - "font-weight-700" → font-weight: 700 (number used directly)
  * - "line-height-400" → line-height: var(--spectrum-line-height-400)
+ * - "center", "left", "right", "justify" → text-align: [value]
  * @returns {{ prop: string, value: string } | null}
  */
 function parseStyleToken(decl) {
@@ -113,6 +158,10 @@ function parseStyleToken(decl) {
   if (fontWeightMatch) return { prop: 'fontWeight', value: fontWeightMatch[1] };
   const lineHeightMatch = lower.match(/^line-height-(\d+)$/);
   if (lineHeightMatch) return { prop: 'lineHeight', value: `var(--spectrum-line-height-${lineHeightMatch[1]})` };
+  // Text alignment shorthand
+  if (['center', 'left', 'right', 'justify'].includes(lower)) {
+    return { prop: 'textAlign', value: lower };
+  }
   return null;
 }
 
@@ -120,7 +169,8 @@ function parseStyleToken(decl) {
  * Apply optional font-related CSS. Use for "style" row in Font block.
  * Accepts:
  * - Full form: "font-size: 1rem, font-weight: 700"
- * - Shorthand: "font-size-400, font-weight-700, line-height-400" (Spectrum vars for size/line-height, number for weight)
+ * - Shorthand: "font-size-400, font-weight-700, line-height-400"
+ * - Alignment: "center", "left", "right", "justify"
  * @param {string} value - Comma-separated declarations or shorthand tokens.
  * @param {Element} element - Element to apply inline styles to.
  */
@@ -133,7 +183,7 @@ export function decorateFontStyle(value, element) {
   });
 }
 
-export function decorateButton({ target, key, descriptor, href, variant, size, treatment, staticColor }) {
+export function decorateButton({ target, key, descriptor, href, variant, size, treatment, staticColor, ariaLabel, contentId, contentName }) {
   const button = createTag('sp-button', {
     variant: variant ?? 'primary',
     size: size ?? 'm',
@@ -143,6 +193,15 @@ export function decorateButton({ target, key, descriptor, href, variant, size, t
   });
   if (href) {
     button.setAttribute('href', href);
+  }
+  if (ariaLabel) {
+    button.setAttribute('aria-label', ariaLabel);
+  }
+  if (contentId) {
+    button.setAttribute('data-content-id', contentId);
+  }
+  if (contentName) {
+    button.setAttribute('data-content-name', contentName);
   }
   button.textContent = descriptor?.value ?? '';
   target.appendChild(button);

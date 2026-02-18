@@ -28,7 +28,12 @@ export default async function decorate(block) {
   const description = descCell?.textContent?.trim() || '';
   const linkEl = linkCell?.querySelector('a');
   const href = linkEl?.href?.trim() || '#';
-  const ctaLabel = linkEl?.textContent?.trim() || 'Learn more';
+  
+  // Read attributes that were already set by decorateLinks
+  const ctaLabel = (linkEl?.textContent ?? '').trim() || 'Learn more';
+  const ariaLabel = linkEl?.getAttribute('aria-label') || null;
+  const contentId = linkEl?.getAttribute('data-content-id') || null;
+  const contentName = linkEl?.getAttribute('data-content-name') || null;
 
   const iconWrap = createTag('div', { class: 'hva-card-icon' });
   if (picture) {
@@ -53,6 +58,9 @@ export default async function decorate(block) {
     target: ctaWrap,
     descriptor: { value: ctaLabel },
     href,
+    ...(ariaLabel && { ariaLabel }),
+    ...(contentId && { contentId }),
+    ...(contentName && { contentName }),
     ...getButtonProps(block, 'cta'),
   });
 
