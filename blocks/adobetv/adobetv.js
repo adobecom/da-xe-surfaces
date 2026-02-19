@@ -23,9 +23,7 @@ const updateCaptionsLang = (url, geo, captionsLangMap) => {
   return url.toString();
 };
 
-const createIframe = (block, href) => {
-  console.log('createIframe called with:', block.tagName, block.className);
-  
+const createIframe = (block, href) => {  
   const link = block.tagName === 'A' ? block : block.querySelector('a');
   const videoHref = href || (link && link.href);
 
@@ -34,17 +32,13 @@ const createIframe = (block, href) => {
   if (block.tagName !== 'A') {
     // Regular block: height class is on the block itself
     const classes = [...block.classList];
-    console.log('Block classes:', classes);
     heightClass = classes.find(c => c.match(/^height-\d+$/));
-    console.log('Found height class on block:', heightClass);
   } else {
     // Auto-block: check parent element for height class
     const parent = block.parentElement;
     if (parent && parent.classList) {
       const parentClasses = [...parent.classList];
-      console.log('Parent classes:', parentClasses);
       heightClass = parentClasses.find(c => c.match(/^height-\d+$/));
-      console.log('Found height class on parent:', heightClass);
     }
   }
 
@@ -60,10 +54,7 @@ const createIframe = (block, href) => {
   
   // Apply height class to embed if found
   if (heightClass) {
-    console.log('Applying height class to embed:', heightClass);
     embed.classList.add(heightClass);
-  } else {
-    console.log('No height class found');
   }
   
   if (block.tagName === 'A') {
@@ -80,8 +71,6 @@ const createIframe = (block, href) => {
     block.innerHTML = '';
     block.appendChild(embed);
   }
-
-  console.log('Final embed classes:', [...embed.classList]);
 
   const idMatch = videoHref.match(/\/v\/(\d+)/);
   const videoId = idMatch ? idMatch[1] : null;

@@ -1,15 +1,63 @@
-import { createTag } from '../../utils/utils.js';
+import { createTag, parseIconClass, resolveIcon } from '../../utils/utils.js';
 import { decorateButton, decorateText, getButtonProps } from '../../utils/decorate.js';
 
 const CELLS = ['picture', 'title', 'description', 'link'];
 
+const IMAGE_EXT = /\.(png|jpe?g|gif|webp|svg)(\?|$)/i;
+
+/** First row may be headers; use the row that has actual content (e.g. span.icon or link). */
+function getContentRow(block) {
+  const rows = [...block.children].filter((r) => r.children?.length >= CELLS.length);
+  const headerLike = (cell) => {
+    const t = (cell?.textContent || '').trim().toLowerCase();
+    return CELLS.includes(t) || t === 'image';
+  };
+  const dataRow = rows.find((row) => {
+    const first = row.children?.[0];
+    return first && !headerLike(first) && (first.querySelector?.('span.icon, picture, img, a') || first.textContent?.trim());
+  });
+  return dataRow || rows[0] || block.firstElementChild;
+}
+
 function getCellContent(block, name) {
-  const row = block.firstElementChild;
+  const row = getContentRow(block);
   if (!row) return null;
   const cells = row.children;
   const i = CELLS.indexOf(name);
   if (i < 0 || !cells[i]) return null;
   return cells[i];
+}
+
+/**
+ * Resolve icon from picture cell: picture/img, image URL (link or text), icon name (Spectrum/content),
+ * or already-replaced sp-icon-* (decorateIcons runs before blocks).
+ */
+async function getIconFromPictureCell(pictureCell) {
+  const picture = pictureCell?.querySelector('picture, img');
+  if (picture) return picture.cloneNode(true);
+  const link = pictureCell?.querySelector('a');
+  let href = link?.href?.trim();
+  if (!href) {
+    const text = pictureCell?.textContent?.trim() || '';
+    if (IMAGE_EXT.test(text)) href = text;
+  }
+  if (href && IMAGE_EXT.test(href)) {
+    const img = createTag('img', { src: href, alt: link?.textContent?.trim() || '', loading: 'lazy' });
+    return img;
+  }
+  const existingSpIcon = [...(pictureCell?.children || [])].find((el) => el?.tagName?.toLowerCase().startsWith('sp-icon-'));
+  if (existingSpIcon) return existingSpIcon.cloneNode(true);
+  const existingSvg = pictureCell?.querySelector('svg');
+  if (existingSvg) return existingSvg.cloneNode(true);
+  const iconSpan = pictureCell?.querySelector('span.icon');
+  if (iconSpan) {
+    const iconClass = [...(iconSpan.classList || [])].find((c) => c.startsWith('icon-'))?.slice(5) ?? '';
+    const { name, size } = parseIconClass(iconClass);
+    if (name) return resolveIcon(name, { size: size || 'm' });
+  }
+  const iconName = pictureCell?.textContent?.trim();
+  if (iconName) return resolveIcon(iconName, { size: 'm' });
+  return null;
 }
 
 export default async function decorate(block) {
@@ -23,7 +71,7 @@ export default async function decorate(block) {
   const descCell = getCellContent(block, 'description');
   const linkCell = getCellContent(block, 'link');
 
-  const picture = pictureCell?.querySelector('picture, img');
+  const iconImage = await getIconFromPictureCell(pictureCell);
   const title = titleCell?.textContent?.trim() || '';
   const description = descCell?.textContent?.trim() || '';
   const linkEl = linkCell?.querySelector('a');
@@ -36,9 +84,8 @@ export default async function decorate(block) {
   const contentName = linkEl?.getAttribute('data-content-name') || null;
 
   const iconWrap = createTag('div', { class: 'hva-card-icon' });
-  if (picture) {
-    const clone = picture.cloneNode(true);
-    iconWrap.append(clone);
+  if (iconImage) {
+    iconWrap.append(iconImage);
   }
 
   const body = createTag('div', { class: 'hva-card-body' });

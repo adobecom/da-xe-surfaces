@@ -1,4 +1,4 @@
-const MILO_BLOCKS = [
+const LOCAL_BLOCKS = [
   'button',
   'font',
   'fragment',
@@ -10,18 +10,6 @@ const MILO_BLOCKS = [
 
 const AUTO_BLOCKS = [
   { adobetv: 'tv.adobe.com' },
-  { gist: 'https://gist.github.com' },
-  // { caas: '/tools/caas' },
-  // { faas: '/tools/faas' },
-  { fragment: '/de-xe-surfaces/', styles: false },
-  { vimeo: 'https://vimeo.com' },
-  { vimeo: 'https://player.vimeo.com' },
-  { youtube: 'https://www.youtube.com' },
-  { youtube: 'https://youtu.be' },
-  // { 'pdf-viewer': '.pdf', styles: false },
-  { video: '.mp4' },
-  // { merch: '/tools/ost?' },
-  // { 'mas-autoblock': 'mas.adobe.com/studio' },
 ];
 
 const DO_NOT_INLINE = [
@@ -326,50 +314,6 @@ export function decorateAutoBlock(a) {
   });
 }
 
-const decorateCopyLink = (a, evt) => {
-  const userAgent = navigator.userAgent.toLowerCase();
-  const isMobile = /android|iphone|mobile/.test(userAgent) && !/ipad/.test(userAgent);
-  if (!isMobile || !navigator.share) {
-    a.remove();
-    return;
-  }
-  const link = a.href.replace(evt, '');
-  const isConButton = ['EM', 'STRONG'].includes(a.parentElement.nodeName)
-    || a.classList.contains('con-button');
-  if (!isConButton) a.classList.add('static', 'copy-link');
-  a.href = '';
-  a.addEventListener('click', async (e) => {
-    e.preventDefault();
-    if (navigator.share) await navigator.share({ title: link, url: link });
-  });
-};
-
-export function convertStageLinks({ anchors, config, hostname, href }) {
-  const { env, stageDomainsMap, locale } = config;
-  if (env?.name === 'prod' || !stageDomainsMap) return;
-  const matchedRules = Object.entries(stageDomainsMap)
-    .find(([domain]) => (new RegExp(domain)).test(href));
-  if (!matchedRules) return;
-  const [, domainsMap] = matchedRules;
-  [...anchors].forEach((a) => {
-    const hasLocalePrefix = a.pathname.startsWith(`${locale.prefix}/`);
-    const noLocaleLink = hasLocalePrefix ? a.href.replace(locale.prefix, '') : a.href;
-    const matchedDomain = Object.keys(domainsMap)
-      .find((domain) => (new RegExp(domain)).test(noLocaleLink));
-    if (!matchedDomain) return;
-    const convertedLink = noLocaleLink.replace(
-      new RegExp(matchedDomain),
-      domainsMap[matchedDomain] === 'origin'
-        ? `${matchedDomain.includes('https') ? 'https://' : ''}${hostname}`
-        : domainsMap[matchedDomain],
-    );
-    const convertedUrl = new URL(convertedLink);
-    convertedUrl.pathname = `${hasLocalePrefix ? locale.prefix : ''}${convertedUrl.pathname}`;
-    a.href = convertedUrl.toString();
-    if (/(\.page|\.live).*\.html(?=[?#]|$)/.test(a.href)) a.href = a.href.replace(/\.html(?=[?#]|$)/, '');
-  });
-}
-
 let urlMappingCache = null;
 let urlMappingPromise = null;
 
@@ -384,6 +328,7 @@ async function loadUrlMapping() {
   urlMappingPromise = (async () => {
     try {
       const path = window.location.pathname;
+      if (path.includes('/blocks/')) return {};
       const pathParts = path.split('/').filter(Boolean);
       const pageName = pathParts.pop()?.replace('.html', '') || 'index';
       const basePath = pathParts.length ? `/${pathParts.join('/')}/` : '/';
@@ -417,20 +362,21 @@ async function loadUrlMapping() {
   return urlMappingPromise;
 }
 
+/** True if href looks like a shorthand (no protocol, not path, not hash/mailto/tel). */
+function isShorthandHref(href) {
+  if (!href || typeof href !== 'string') return false;
+  const h = href.trim();
+  return !(h.startsWith('http://') || h.startsWith('https://') || h.startsWith('/')
+    || h.startsWith('#') || h.startsWith('mailto:') || h.startsWith('tel:'));
+}
+
 /**
- * Resolve a shorthand to its actual URL
- * @param {string} href - Original href (could be shorthand or full URL)
- * @returns {Promise<string>} Resolved URL
+ * Resolve a shorthand to its actual URL. Only call when isShorthandHref(href).
+ * @param {string} href - Shorthand value
+ * @returns {Promise<string>} Resolved URL or original
  */
 async function resolveShorthandUrl(href) {
-  // If it's already a full URL, return as-is
-  if (!href || href.startsWith('http://') || href.startsWith('https://') 
-      || href.startsWith('/') || href.startsWith('#') || href.startsWith('mailto:')
-      || href.startsWith('tel:')) {
-    return href;
-  }
-
-  // Try to resolve as shorthand
+  if (!isShorthandHref(href)) return href;
   const mapping = await loadUrlMapping();
   return mapping[href] || href;
 }
@@ -441,10 +387,9 @@ export async function decorateLinks(el) {
   const anchors = el.getElementsByTagName('a');
   const { hostname, href } = window.location;
   
-  // Resolve all shorthands first
   const resolvePromises = [...anchors].map(async (a) => {
     const originalHref = a.getAttribute('href');
-    if (originalHref) {
+    if (originalHref && isShorthandHref(originalHref)) {
       const resolvedHref = await resolveShorthandUrl(originalHref);
       if (resolvedHref !== originalHref) {
         a.href = resolvedHref;
@@ -454,17 +399,10 @@ export async function decorateLinks(el) {
   await Promise.all(resolvePromises);
   
   const links = [...anchors].reduce((rdx, a) => {
-    appendHtmlToLink(a);
-    if (a.href.includes('http:')) a.setAttribute('data-http-link', 'true');
-    a.href = localizeLink(a.href);
     decorateSVG(a);
     if (a.href.includes('#_blank')) {
       a.setAttribute('target', '_blank');
       a.href = a.href.replace('#_blank', '');
-    }
-    if (a.href.includes('#_nofollow')) {
-      a.setAttribute('rel', 'nofollow');
-      a.href = a.href.replace('#_nofollow', '');
     }
     if (a.href.includes('#_dnb')) {
       a.href = a.href.replace('#_dnb', '');
@@ -473,26 +411,6 @@ export async function decorateLinks(el) {
       if (autoBlock) {
         rdx.push(a);
       }
-    }
-    // Custom action links
-    const loginEvent = '#_evt-login';
-    if (a.href.includes(loginEvent)) {
-      a.href = a.href.replace(loginEvent, '');
-      a.addEventListener('click', (e) => {
-        e.preventDefault();
-        const { signInContext } = config;
-        window.adobeIMS?.signIn(signInContext);
-      });
-    }
-    const copyEvent = '#_evt-copy';
-    if (a.href.includes(copyEvent)) {
-      decorateCopyLink(a, copyEvent);
-    }
-    const branchQuickLink = 'app.link';
-
-    if (a.href.includes(branchQuickLink)) {
-      (async () => {
-      })();
     }
     // Extract attributes using pipe syntax: "Text | aria: Label | id: hero-cta | name: Get Started"
     // Maps to: aria-label, data-content-id, data-content-name
@@ -543,7 +461,6 @@ export async function decorateLinks(el) {
 
     return rdx;
   }, []);
-  convertStageLinks({ anchors, config, hostname, href });
   return links;
 }
 
@@ -600,7 +517,7 @@ async function decorateSection(section, idx) {
     links.filter((link) => block.contains(link))
       .forEach((link) => {
         if (link.classList.contains('fragment')
-          && MILO_BLOCKS.includes(blockName) // do not inline consumer blocks (for now)
+          && LOCAL_BLOCKS.includes(blockName) // do not inline consumer blocks (for now)
           && !doNotInline.includes(blockName)) {
           if (!link.href.includes('#_inline')) {
             link.href = `${link.href}#_inline`;
@@ -703,17 +620,129 @@ export function loadStyle(href, callback) {
   return loadLink(href, { rel: 'stylesheet', callback });
 }
 
-async function decorateIcons(area, config) {
-  let icons = area.querySelectorAll('span.icon');
-  if (icons.length === 0) return;
-  const { base, iconsExcludeBlocks } = config;
-  if (iconsExcludeBlocks) {
-      const excludedIconsCount = [...icons].filter((icon) => iconsExcludeBlocks.some((block) => icon.closest(`div.${block}`))).length;
-      if (excludedIconsCount === icons.length) return;
+/** Parse icon-* class value into name and optional size (e.g. "chevron-right-s" -> { name: "chevron-right", size: "s" }). */
+export function parseIconClass(value) {
+  if (!value) return { name: '', size: undefined };
+  const sizes = ['xxl', 'xl', 'l', 'm', 's'];
+  for (const size of sizes) {
+    const suffix = `-${size}`;
+    if (value.endsWith(suffix)) {
+      return { name: value.slice(0, -suffix.length), size };
+    }
   }
-  loadStyle(`${base}/features/icons/icons.css`);
-  const { default: loadIcons } = await import('../features/icons/icons.js');
-  await loadIcons(icons, config);
+  return { name: value, size: undefined };
+}
+
+/** Spectrum icon size CSS variables (same as sp-icon). */
+const SPECTRUM_ICON_SIZE_VAR = {
+  s: 'var(--spectrum-workflow-icon-size-75)',
+  m: 'var(--spectrum-workflow-icon-size-100)',
+  l: 'var(--spectrum-workflow-icon-size-200)',
+  xl: 'var(--spectrum-workflow-icon-size-300)',
+  xxl: 'var(--spectrum-workflow-icon-size-xxl)',
+};
+
+function applyIconSizeToSvg(svg, size) {
+  if (!svg || !size || !SPECTRUM_ICON_SIZE_VAR[size]) return;
+  const sizeVar = SPECTRUM_ICON_SIZE_VAR[size];
+  svg.style.width = sizeVar;
+  svg.style.height = sizeVar;
+  svg.setAttribute('data-icon-size', size);
+}
+
+/** Cache for fetched content icons (iconName -> SVG element). */
+const contentIconCache = new Map();
+
+/**
+ * Fetch and parse an SVG from the given URL. Returns the SVG element or null.
+ * @param {string} url - Full URL to the SVG
+ * @param {string} iconName - Name used for cache key
+ * @returns {Promise<SVGElement|null>}
+ */
+async function fetchAndParseSVG(url, iconName) {
+  const res = await fetch(url);
+  if (!res.ok) return null;
+  const text = await res.text();
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(text, 'image/svg+xml');
+  const svg = doc.querySelector('svg');
+  if (!svg) return null;
+  svg.setAttribute('data-icon', iconName);
+  return document.adoptNode(svg);
+}
+
+/**
+ * Fetch an icon SVG from the current site's docs/library/icons (e.g. when not in Spectrum).
+ * Uses config base/contentRoot; path is {base}/docs/library/icons/{iconName}.svg.
+ * Results are cached by iconName. Callers receive a clone so the icon can be appended safely.
+ * @param {string} iconName - Icon name without extension (e.g. 'search', 'chevron-right')
+ * @returns {Promise<SVGElement|null>} A clone of the SVG element, or null if fetch/parse fails
+ */
+export async function fetchContentIcon(iconName) {
+  if (!iconName?.trim()) return null;
+  const key = iconName.trim();
+  if (contentIconCache.has(key)) return contentIconCache.get(key).cloneNode(true);
+  const config = getConfig();
+  const bases = [
+    (config.base || config.contentRoot || '').toString().replace(/\/$/, ''),
+    window.location.origin,
+  ].filter(Boolean);
+  for (const base of bases) {
+    const path = `${base}/docs/library/icons/${key}.svg`;
+    try {
+      const svgElement = await fetchAndParseSVG(path, key);
+      if (svgElement) {
+        contentIconCache.set(key, svgElement);
+        return svgElement.cloneNode(true);
+      }
+    } catch {
+      /* try next base */
+    }
+  }
+  return null;
+}
+
+async function decorateIcons(area, config) {
+  const icons = area.querySelectorAll('span.icon');
+  if (icons.length === 0) return;
+  const { iconsExcludeBlocks } = config;
+  if (iconsExcludeBlocks) {
+    const excludedIconsCount = [...icons].filter((icon) => iconsExcludeBlocks.some((block) => icon.closest(`div.${block}`))).length;
+    if (excludedIconsCount === icons.length) return;
+  }
+  for (const span of icons) {
+    const iconClass = [...(span.classList || [])].find((c) => c.startsWith('icon-'))?.slice(5) ?? '';
+    const { name, size } = parseIconClass(iconClass);
+    if (!name) continue;
+    const svg = await fetchContentIcon(name);
+    if (svg) {
+      applyIconSizeToSvg(svg, size);
+      const label = span.getAttribute('aria-label');
+      if (label) svg.setAttribute('aria-label', label);
+      span.replaceWith(svg);
+    } else {
+      console.warn(`Icon "${name}" not found in library.`);
+    }
+  }
+}
+
+/**
+ * Resolve an icon by name from docs/library/icons. Use in blocks (e.g. hva-card).
+ * @param {string} name - Icon name without extension (e.g. 'search', 'chevron-down')
+ * @param {{ size?: string, label?: string }} [options] - Optional size (s|m|l|xl|xxl) and aria-label
+ * @returns {Promise<SVGElement|null>} The icon SVG or null
+ */
+export async function resolveIcon(name, options = {}) {
+  if (!name?.trim()) return null;
+  const n = name.trim();
+  const { size, label } = options;
+  const svg = await fetchContentIcon(n);
+  if (svg) {
+    applyIconSizeToSvg(svg, size);
+    if (label) svg.setAttribute('aria-label', label);
+    return svg;
+  }
+  return null;
 }
 
 /**
