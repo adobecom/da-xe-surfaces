@@ -243,15 +243,22 @@ export function resolveLinkHrefs(area = document) {
     }
     // Support both " | " and encoded "%20%7C%20" / " %7C " so pipe-in-href works when encoded
     const pipeSplit = href.includes(' | ') ? ' | ' : (href.includes('%20%7C%20') ? '%20%7C%20' : (href.includes(' %7C ') ? ' %7C ' : null));
-    if (!pipeSplit) return;
+    let shorthand = null;
+    if (pipeSplit) {;
     const parts = href.split(pipeSplit).map((p) => p.trim());
-    const shorthand = parts[0];
-    const resolved = getResolvedUrl(shorthand);
-    if (resolved) {
-      a.href = resolved;
-      if (parts[1]) a.setAttribute('data-content-id', parts[1]);
-      if (parts[2]) a.setAttribute('data-content-name', parts[2]);
-    }
+    shorthand = parts[0];
+    if (parts[1]) a.setAttribute('data-content-id', parts[1]);
+    if (parts[2]) a.setAttribute('data-content-name', parts[2]);
+  } else if (urlMetadataMap.has(href.trim().toLowerCase())) {
+     shorthand = href.trim().toLowerCase();
+  } else {
+    return;
+  }
+  const resolved = getResolvedUrl(shorthand);
+  if (resolved) {
+    a.href = resolved;
+  }
+
   });
 }
 
