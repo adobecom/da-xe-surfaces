@@ -83,24 +83,24 @@ export default async function decorate(block) {
   const contentId = linkEl?.getAttribute('data-content-id') || null;
   const contentName = linkEl?.getAttribute('data-content-name') || null;
 
-  const iconWrap = createTag('div', { class: 'hva-card-icon' });
+  const iconWrap = createTag('div', { class: 'row-card-icon' });
   if (iconImage) {
     iconWrap.append(iconImage);
   }
 
-  const body = createTag('div', { class: 'hva-card-body' });
+  const body = createTag('div', { class: 'row-card-body' });
   if (title) {
-    const titleEl = createTag('h3', { class: 'hva-card-title' });
-    decorateText({ target: titleEl, text: title, className: 'text-nowrap' });
+    const titleEl = createTag('h3', { class: 'row-card-title' });
+    titleEl.textContent = title;
     body.append(titleEl);
   }
   if (description) {
-    const descEl = createTag('p', { class: 'hva-card-description' });
-    decorateText({ target: descEl, text: description, className: 'text-nowrap' });
+    const descEl = createTag('p', { class: 'row-card-description' });
+    descEl.textContent = description;
     body.append(descEl);
   }
 
-  const ctaWrap = createTag('div', { class: 'hva-card-cta' });
+  const ctaWrap = createTag('div', { class: 'row-card-cta' });
   decorateButton({
     target: ctaWrap,
     descriptor: { value: ctaLabel },
@@ -111,7 +111,7 @@ export default async function decorate(block) {
     ...getButtonProps(block, 'cta'),
   });
 
-  const inner = createTag('div', { class: 'hva-card-inner' });
+  const inner = createTag('div', { class: 'row-card-inner' });
   inner.append(iconWrap, body, ctaWrap);
 
   block.innerHTML = '';

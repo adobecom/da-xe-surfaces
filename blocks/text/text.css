@@ -1,0 +1,13 @@
+/* Alignment: pass center-alignment, left-alignment, right-alignment, justify-alignment, or center, left, right, justify */
+.text.text-align-center {
+  text-align: center;
+}
+.text.text-align-left {
+  text-align: left;
+}
+.text.text-align-right {
+  text-align: right;
+}
+.text.text-align-justify {
+  text-align: justify;
+}

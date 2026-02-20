@@ -1,15 +1,17 @@
 const LOCAL_BLOCKS = [
+  'adobe-tv',
   'button',
-  'font',
-  'fragment',
-  'hva-card',
+  'row-card',
+  'text',
   'page-metadata',
   'section-metadata',
+  'url-metadata',
   'video',
 ];
 
+
 const AUTO_BLOCKS = [
-  { adobetv: 'tv.adobe.com' },
+
 ];
 
 const DO_NOT_INLINE = [
@@ -38,6 +40,54 @@ ENVS.local = {
   ...ENVS.stage,
   name: 'local',
 };
+
+/** URL metadata: shorthand → { ccwebstage?, ccwebprod?, ccdstage?, ccdprod?, sso? }. Keys come from block classes. Populated by url-metadata block(s); entries merge when same shorthand. */
+let urlMetadataMap = new Map();
+
+export function setUrlMetadata(entries) {
+  if (!entries || typeof entries !== 'object') return;
+  Object.entries(entries).forEach(([key, val]) => {
+    const k = key.trim().toLowerCase();
+    const existing = urlMetadataMap.get(k);
+    const merged = existing && typeof existing === 'object' && typeof val === 'object'
+      ? { ...existing, ...val }
+      : val;
+    urlMetadataMap.set(k, merged);
+  });
+}
+
+/**
+ * Get the full url-metadata entry for a shorthand (URL slots + optional sso).
+ * Entry keys are slot names from block classes: ccwebstage, ccwebprod, ccdstage, ccdprod, sso (object).
+ * @param {string} shorthand - Key from url-metadata (e.g. 'openFireflyOnWeb')
+ * @returns {{ ccwebstage?: string, ccwebprod?: string, ccdstage?: string, ccdprod?: string, sso?: Record<string, string> }|null}
+ */
+export function getUrlMetadataEntry(shorthand) {
+  if (!shorthand?.trim()) return null;
+  return urlMetadataMap.get(shorthand.trim().toLowerCase()) || null;
+}
+
+/** Slot name for current env: ccwebstage | ccwebprod | ccdstage | ccdprod (matches block class names). */
+function getCurrentUrlSlot() {
+  const { hostname } = window.location;
+  const isStage = hostname.includes('stage') || hostname.includes('localhost');
+  const isCcd = hostname.includes('ccd');
+  return (isCcd ? 'ccd' : 'ccweb') + (isStage ? 'stage' : 'prod');
+}
+
+/**
+ * Resolve a URL shorthand to the full URL for the current environment and host.
+ * Uses url-metadata map; entry keys are slot names from block classes (ccwebstage, ccwebprod, ccdstage, ccdprod, ssodetails).
+ * @param {string} shorthand - Key from url-metadata (e.g. 'openFireflyOnWeb')
+ * @returns {string|null} Resolved URL or null if not found
+ */
+export function getResolvedUrl(shorthand) {
+  const entry = getUrlMetadataEntry(shorthand);
+  if (!entry || typeof entry !== 'object') return null;
+  const slot = getCurrentUrlSlot();
+  const url = entry[slot];
+  return typeof url === 'string' ? url.trim() : null;
+}
 
 function getLocale(locales, pathname = window.location.pathname) {
   if (!locales) {
@@ -142,310 +192,22 @@ export const [setConfig, getConfig] = (() => {
   ];
 })();
 
-export function decorateImageLinks(el) {
-  const images = el.querySelectorAll('img[alt*="|"]');
-  if (!images.length) return;
-  [...images].forEach((img) => {
-    const [source, alt, icon] = img.alt.split('|');
-    try {
-      const url = new URL(source.trim());
-      const href = url.hostname.includes(`.${SLD}.`) ? `${url.pathname}${url.hash}` : url.href;
-      if (alt?.trim().length) img.alt = alt.trim();
-      const pic = img.closest('picture');
-      const picParent = pic.parentElement;
-      if (href.includes('.mp4')) {
-        const a = createTag('a', { href: url, 'data-video-poster': pic.outerHTML });
-        a.innerHTML = url;
-        pic.replaceWith(a);
-      } else {
-        const aTag = createTag('a', { href, class: 'image-link' });
-        picParent.insertBefore(aTag, pic);
-        if (icon) {
-        } else {
-          aTag.append(pic);
-        }
-      }
-    } catch (e) {
-      console.log('Error:', `${e.message} '${source.trim()}'`);
-    }
-  });
-}
 
-export function appendHtmlToLink(link) {
-  const { useDotHtml } = getConfig();
-  if (!useDotHtml) return;
-  const href = link.getAttribute('href');
-  if (!href?.length) return;
 
-  const { autoBlocks = [], htmlExclude = [] } = getConfig();
-
-  const HAS_EXTENSION = /\..*$/;
-  let url = { pathname: href };
-
-  try { url = new URL(href, PAGE_URL); } catch (e) { /* do nothing */ }
-
-  if (!(href.startsWith('/') || href.startsWith(PAGE_URL.origin))
-    || url.pathname?.endsWith('/')
-    || href === PAGE_URL.origin
-    || HAS_EXTENSION.test(href.split('/').pop())
-    || htmlExclude?.some((excludeRe) => excludeRe.test(href))) {
-    return;
-  }
-
-  const relativeAutoBlocks = autoBlocks
-    .map((b) => Object.values(b)[0])
-    .filter((b) => b.startsWith('/'));
-  const isAutoblockLink = relativeAutoBlocks.some((block) => href.includes(block));
-  if (isAutoblockLink) return;
-
-  try {
-    const linkUrl = new URL(href.startsWith('http') ? href : `${PAGE_URL.origin}${href}`);
-    if (linkUrl.pathname && !linkUrl.pathname.endsWith('.html')) {
-      linkUrl.pathname = `${linkUrl.pathname}.html`;
-      link.setAttribute('href', href.startsWith('/')
-        ? `${linkUrl.pathname}${linkUrl.search}${linkUrl.hash}`
-        : linkUrl.href);
-    }
-  } catch (e) {
-    window.lana?.log(`Error while attempting to append '.html' to ${link}: ${e}`);
-  }
-}
-
-export function decorateSVG(a) {
-  const { textContent, href } = a;
-  if (!(textContent.includes('.svg') || href.includes('.svg'))) return a;
-  try {
-    // Mine for URL and alt text
-    const splitText = textContent.split('|');
-    const authoredUrl = new URL(splitText.shift().trim());
-    const altText = splitText.join('|').trim();
-
-    // Relative link checking
-    const hrefUrl = a.href.startsWith('/')
-      ? new URL(`${window.location.origin}${a.href}`)
-      : new URL(a.href);
-
-    const src = (authoredUrl.hostname.includes('.hlx.') || authoredUrl.hostname.includes('.aem.'))
-      ? authoredUrl.pathname
-      : authoredUrl;
-
-    const img = createTag('img', { loading: 'lazy', src, alt: altText || '' });
-    const pic = createTag('picture', null, img);
-
-    if (authoredUrl.pathname === hrefUrl.pathname) {
-      a.parentElement.replaceChild(pic, a);
-      return pic;
-    }
-    a.textContent = '';
-    a.append(pic);
-    return a;
-  } catch (e) {
-    console.log('Failed to create SVG.', e.message);
-    return a;
-  }
-}
-
-export function decorateAutoBlock(a) {
-  const config = getConfig();
-  const { hostname } = window.location;
-  let url;
-  try {
-    url = new URL(a.href);
-  } catch (e) {
-    window.lana?.log(`Cannot make URL from decorateAutoBlock - ${a?.href}: ${e.toString()}`);
-    return false;
-  }
-
-  const href = hostname === url.hostname
-  ? `${url.pathname}${url.search}${url.hash}`
-  : a.href;
-
-  return config.autoBlocks.find((candidate) => {
-    const key = Object.keys(candidate)[0];
-    const match = href.includes(candidate[key]);
-    if (!match) return false;
-
-    if (key === 'pdf-viewer' && !a.textContent.includes('.pdf')) {
-      a.target = '_blank';
-      return false;
-    }
-
-    const hasExtension = a.href.split('/').pop().includes('.');
-    const mp4Match = a.textContent.match('media_.*.mp4');
-    if (key === 'fragment' && (!hasExtension || mp4Match)) {
-      if (a.href === window.location.href) {
-        return false;
-      }
-
-      const isInlineFrag = url.hash.includes('#_inline');
-      if (url.hash === '' || isInlineFrag) {
-        const { parentElement } = a;
-        const { nodeName, innerHTML } = parentElement;
-        const noText = innerHTML === a.outerHTML;
-        if (noText && nodeName === 'P') {
-          const div = createTag('div', null, a);
-          parentElement.parentElement.replaceChild(div, parentElement);
-        }
-      }
-
-      // previewing a fragment page with mp4 video
-      if (mp4Match) {
-        a.className = 'video link-block';
-        return false;
-      }
-
-      // Modals
-      if (url.hash !== '' && !isInlineFrag) {
-        a.dataset.modalPath = url.pathname;
-        a.dataset.modalHash = url.hash;
-        a.href = url.hash;
-        a.className = `modal link-block ${[...a.classList].join(' ')}`;
-        return true;
-      }
-    }
-
-    // slack uploaded mp4s
-    if (key === 'video' && !a.textContent.match('media_.*.mp4')) {
-      return false;
-    }
-
-    a.className = `${key} link-block`;
-    return true;
-  });
-}
-
-let urlMappingCache = null;
-let urlMappingPromise = null;
-
-/**
- * Load URL shorthand mapping JSON for the current page
- * @returns {Promise<Object>} Mapping object with shorthand -> ccweb URL
- */
-async function loadUrlMapping() {
-  if (urlMappingCache) return urlMappingCache;
-  if (urlMappingPromise) return urlMappingPromise;
-
-  urlMappingPromise = (async () => {
-    try {
-      const path = window.location.pathname;
-      if (path.includes('/blocks/')) return {};
-      const pathParts = path.split('/').filter(Boolean);
-      const pageName = pathParts.pop()?.replace('.html', '') || 'index';
-      const basePath = pathParts.length ? `/${pathParts.join('/')}/` : '/';
-      const mappingUrl = `${basePath}${pageName}-url-shorthand-mapping.json`;
-      
-      const response = await fetch(mappingUrl);
-      if (!response.ok) {
-        return {};
-      }
-      
-      const json = await response.json();
-      // Convert array format to object for easy lookup
-      const mapping = {};
-      if (json.data && Array.isArray(json.data)) {
-        json.data.forEach((item) => {
-          if (item.shorthand && item.ccweb) {
-            mapping[item.shorthand] = item.ccweb;
-          }
-        });
-      }
-      
-      urlMappingCache = mapping;
-      return mapping;
-    } catch (error) {
-      // eslint-disable-next-line no-console
-      console.warn('Failed to load URL mapping:', error);
-      return {};
-    }
-  })();
-
-  return urlMappingPromise;
-}
-
-/** True if href looks like a shorthand (no protocol, not path, not hash/mailto/tel). */
-function isShorthandHref(href) {
-  if (!href || typeof href !== 'string') return false;
-  const h = href.trim();
-  return !(h.startsWith('http://') || h.startsWith('https://') || h.startsWith('/')
-    || h.startsWith('#') || h.startsWith('mailto:') || h.startsWith('tel:'));
-}
-
-/**
- * Resolve a shorthand to its actual URL. Only call when isShorthandHref(href).
- * @param {string} href - Shorthand value
- * @returns {Promise<string>} Resolved URL or original
- */
-async function resolveShorthandUrl(href) {
-  if (!isShorthandHref(href)) return href;
-  const mapping = await loadUrlMapping();
-  return mapping[href] || href;
-}
 
 export async function decorateLinks(el) {
-  const config = getConfig();
-  decorateImageLinks(el);
   const anchors = el.getElementsByTagName('a');
-  const { hostname, href } = window.location;
-  
-  const resolvePromises = [...anchors].map(async (a) => {
-    const originalHref = a.getAttribute('href');
-    if (originalHref && isShorthandHref(originalHref)) {
-      const resolvedHref = await resolveShorthandUrl(originalHref);
-      if (resolvedHref !== originalHref) {
-        a.href = resolvedHref;
-      }
-    }
-  });
-  await Promise.all(resolvePromises);
   
   const links = [...anchors].reduce((rdx, a) => {
-    decorateSVG(a);
-    if (a.href.includes('#_blank')) {
-      a.setAttribute('target', '_blank');
-      a.href = a.href.replace('#_blank', '');
-    }
-    if (a.href.includes('#_dnb')) {
-      a.href = a.href.replace('#_dnb', '');
-    } else {
-      const autoBlock = decorateAutoBlock(a);
-      if (autoBlock) {
-        rdx.push(a);
-      }
-    }
-    // Extract attributes using pipe syntax: "Text | aria: Label | id: hero-cta | name: Get Started"
+    // Extract attributes using pipe syntax: "Text | Aria label"
     // Maps to: aria-label, data-content-id, data-content-name
     const textContent = a.textContent || '';
     if (textContent.includes('|')) {
       const parts = textContent.split('|').map(p => p.trim());
       if (parts.length > 1) {
-        let hasAttributes = false;
-        
-        for (let i = 1; i < parts.length; i++) {
-          const part = parts[i];
-          
-          const ariaMatch = part.match(/^aria\s*:\s*(.+)$/i);
-          if (ariaMatch) {
-            a.setAttribute('aria-label', ariaMatch[1].trim());
-            hasAttributes = true;
-            continue;
-          }
-          
-          const idMatch = part.match(/^id\s*:\s*(.+)$/i);
-          if (idMatch) {
-            a.setAttribute('data-content-id', idMatch[1].trim());
-            hasAttributes = true;
-            continue;
-          }
-          
-          const nameMatch = part.match(/^name\s*:\s*(.+)$/i);
-          if (nameMatch) {
-            a.setAttribute('data-content-name', nameMatch[1].trim());
-            hasAttributes = true;
-          }
-        }
+        a.setAttribute('aria-label', parts[1]);
         
         // Remove the attribute parts from all text nodes
-        if (hasAttributes) {
           const walker = document.createTreeWalker(a, NodeFilter.SHOW_TEXT);
           let node;
           while (node = walker.nextNode()) {
@@ -455,13 +217,42 @@ export async function decorateLinks(el) {
               break;
             }
           }
-        }
       }
     }
 
     return rdx;
   }, []);
   return links;
+}
+
+/**
+ * Resolve link hrefs that use url-metadata shorthand: "shorthand | data-content-id | data-content-name".
+ * Call after url-metadata block(s) have run so getResolvedUrl() can resolve the shorthand.
+ * @param {Document|Element} area - Root to search for anchors (default document)
+ */
+export function resolveLinkHrefs(area = document) {
+  const root = area === document ? document.body : area;
+  const anchors = root.querySelectorAll ? root.querySelectorAll('a[href]') : [];
+  anchors.forEach((a) => {
+    let href = a.getAttribute('href');
+    if (!href) return;
+    try {
+      href = decodeURIComponent(href);
+    } catch (e) {
+      // leave href as-is if decoding fails (e.g. malformed %)
+    }
+    // Support both " | " and encoded "%20%7C%20" / " %7C " so pipe-in-href works when encoded
+    const pipeSplit = href.includes(' | ') ? ' | ' : (href.includes('%20%7C%20') ? '%20%7C%20' : (href.includes(' %7C ') ? ' %7C ' : null));
+    if (!pipeSplit) return;
+    const parts = href.split(pipeSplit).map((p) => p.trim());
+    const shorthand = parts[0];
+    const resolved = getResolvedUrl(shorthand);
+    if (resolved) {
+      a.href = resolved;
+      if (parts[1]) a.setAttribute('data-content-id', parts[1]);
+      if (parts[2]) a.setAttribute('data-content-name', parts[2]);
+    }
+  });
 }
 
 export function filterDuplicatedLinkBlocks(blocks) {
@@ -507,7 +298,6 @@ export function getBlockOptions(block, prefix) {
 
 async function decorateSection(section, idx) {
   let links = await decorateLinks(section);
-  // decorateDefaults(section);
   const blocks = section.querySelectorAll(':scope > div[class]:not(.content)');
   blocks.forEach((el) => { if (!el.classList.contains('block')) el.classList.add('block'); });
 
@@ -543,54 +333,6 @@ async function decorateSection(section, idx) {
     idx,
     preloadLinks: filterDuplicatedLinkBlocks(blockLinks.autoBlocks),
   };
-}
-
-async function resolveInlineFrags(section) {
-  const inlineFrags = [...section.el.querySelectorAll('a[href*="#_inline"]')];
-  if (!inlineFrags.length) return;
-  const { default: loadInlineFrags } = await import('../blocks/fragment/fragment.js');
-  const fragPromises = inlineFrags.map((link) => loadInlineFrags(link));
-  await Promise.all(fragPromises);
-  const newlyDecoratedSection = await decorateSection(section.el, section.idx);
-  section.blocks = newlyDecoratedSection.blocks;
-  section.preloadLinks = newlyDecoratedSection.preloadLinks;
-}
-
-
-const findReplaceableNodes = (area) => {
-  const regex = /{{(.*?)}}|%7B%7B(.*?)%7D%7D/g;
-  const walker = document.createTreeWalker(area, NodeFilter.SHOW_ALL);
-  const nodes = [];
-  let node = walker.nextNode();
-  while (node !== null) {
-    let matchFound = false;
-    if (node.nodeType === Node.TEXT_NODE) {
-      matchFound = regex.test(node.nodeValue);
-    } else if (node.nodeType === Node.ELEMENT_NODE && node.hasAttribute('href')) {
-      const hrefValue = node.getAttribute('href');
-      matchFound = regex.test(hrefValue);
-    }
-    if (matchFound) {
-      nodes.push(node);
-      regex.lastIndex = 0;
-    }
-    node = walker.nextNode();
-  }
-  return nodes;
-};
-
-
-
-let placeholderRequest;
-export async function decoratePlaceholders(area, config) {
-  if (!area) return;
-  const nodes = findReplaceableNodes(area);
-  if (!nodes.length) return;
-  area.dataset.hasPlaceholders = 'true';
-  const placeholderPath = `${config.locale?.contentRoot}/placeholders.json`;
-  placeholderRequest = placeholderRequest
-    || customFetch({ resource: placeholderPath, withCacheRules: true })
-      .catch(() => ({}));
 }
 
 export function loadLink(href, { as, callback, crossorigin, rel, fetchpriority } = {}) {
@@ -727,7 +469,7 @@ async function decorateIcons(area, config) {
 }
 
 /**
- * Resolve an icon by name from docs/library/icons. Use in blocks (e.g. hva-card).
+ * Resolve an icon by name from docs/library/icons. Use in blocks (e.g. row-card).
  * @param {string} name - Icon name without extension (e.g. 'search', 'chevron-down')
  * @param {{ size?: string, label?: string }} [options] - Optional size (s|m|l|xl|xxl) and aria-label
  * @returns {Promise<SVGElement|null>} The icon SVG or null
@@ -815,11 +557,8 @@ export function partition(arr, fn) {
   );
 }
 
-
 async function processSection(section, config, isDoc) {
-  await resolveInlineFrags(section);
   await Promise.all([
-    decoratePlaceholders(section.el, config),
     decorateIcons(section.el, config),
   ]);
   const loadBlocks = [];
@@ -854,6 +593,11 @@ export async function loadArea(area = document) {
   const pageMetaBlocks = sections.flatMap((s) => s.blocks).filter((b) => b.classList?.[0] === 'page-metadata');
   await Promise.all(pageMetaBlocks.map((b) => loadBlock(b)));
 
+  // Load url-metadata so shorthand→URL map is ready before resolving link hrefs
+  const urlMetaBlocks = sections.flatMap((s) => s.blocks).filter((b) => b.classList?.[0] === 'url-metadata');
+  await Promise.all(urlMetaBlocks.map((b) => loadBlock(b)));
+  resolveLinkHrefs(area === document ? document.body : area);
+
   const areaBlocks = [];
   for (const section of sections) {
     const sectionBlocks = await processSection(section, config, isDoc);
@@ -864,10 +608,10 @@ export async function loadArea(area = document) {
     });
   }
 
-  // const currentHash = window.location.hash;
-  // if (currentHash) {
-  //   scrollToHashedElement(currentHash);
-  // }
+  const currentHash = window.location.hash;
+  if (currentHash) {
+    scrollToHashedElement(currentHash);
+  }
 }
 
 export function createTag(tag, attributes, html, options = {}) {
@@ -895,39 +639,6 @@ export function createTag(tag, attributes, html, options = {}) {
 function getExtension(path) {
   const pageName = path.split('/').pop();
   return pageName.includes('.') ? pageName.split('.').pop() : '';
-}
-
-export function localizeLink(
-  href,
-  originHostName = window.location.hostname,
-  overrideDomain = false,
-) {
-  try {
-    const url = new URL(href);
-    const relative = url.hostname === originHostName;
-    const processedHref = relative ? href.replace(url.origin, '') : href;
-    const { hash } = url;
-    // don't localize links with #_dnt
-    if (hash.includes('#_dnt')) return processedHref.replace('#_dnt', '');
-    const path = url.pathname;
-    const extension = getExtension(path);
-    const allowedExts = ['', 'html', 'json'];
-    if (!allowedExts.includes(extension)) return processedHref;
-    const { locale, locales, prodDomains } = getConfig();
-    if (!locale || !locales) return processedHref;
-    const isLocalizable = relative || (prodDomains && prodDomains.includes(url.hostname))
-      || overrideDomain;
-    if (!isLocalizable) return processedHref;
-    const isLocalizedLink = path.startsWith(`/${LANGSTORE}`)
-      || path.startsWith(`/${PREVIEW}`)
-      || Object.keys(locales).some((loc) => loc !== '' && (path.startsWith(`/${loc}/`)
-        || path.endsWith(`/${loc}`)));
-    if (isLocalizedLink) return processedHref;
-    const urlPath = `${locale.prefix}${path}${url.search}${hash}`;
-    return relative ? urlPath : `${url.origin}${urlPath}`;
-  } catch (error) {
-    return href;
-  }
 }
 
 export async function customFetch({ resource, withCacheRules }) {
@@ -973,55 +684,3 @@ export async function customFetch({ resource, withCacheRules }) {
     },
   });
 }
-
-export function createIntersectionObserver({ el, callback, once = true, options = {} }) {
-  const io = new IntersectionObserver((entries, observer) => {
-    entries.forEach(async (entry) => {
-      if (entry.isIntersecting) {
-        if (once) observer.unobserve(entry.target);
-        callback(entry.target, entry);
-      }
-    });
-  }, options);
-  io.observe(el);
-  return io;
-}
-
-export function isInTextNode(node) {
-  return (node.parentElement.childNodes.length > 1 && node.parentElement.firstChild.tagName === 'A') || node.parentElement.firstChild.nodeType === Node.TEXT_NODE;
-}
-
-let federatedContentRoot;
-export const getFederatedContentRoot = () => {
-  if (federatedContentRoot) return federatedContentRoot;
-
-  const cdnWhitelistedOrigins = [
-    'https://www.adobe.com',
-    'https://business.adobe.com',
-    'https://blog.adobe.com',
-    'https://milo.adobe.com',
-    'https://news.adobe.com',
-    'graybox.adobe.com',
-  ];
-  const { allowedOrigins = [], origin: configOrigin } = getConfig();
-  if (federatedContentRoot) return federatedContentRoot;
-  // Non milo consumers will have its origin from config
-  const origin = configOrigin || window.location.origin;
-
-  const isAllowedOrigin = [...allowedOrigins, ...cdnWhitelistedOrigins].some((o) => {
-    const originNoStage = origin.replace('.stage', '');
-    return o.startsWith('https://')
-      ? originNoStage === o
-      : originNoStage.endsWith(o);
-  });
-
-  federatedContentRoot = isAllowedOrigin ? origin : 'https://www.adobe.com';
-
-  if (origin.includes('localhost') || origin.includes(`.${SLD}.`)) {
-    federatedContentRoot = `https://main--federal--adobecom.aem.${origin.endsWith('.live') ? 'live' : 'page'}`;
-  }
-
-  return federatedContentRoot;
-};
-
-

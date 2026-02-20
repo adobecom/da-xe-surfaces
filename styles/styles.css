@@ -204,45 +204,24 @@ sp-theme.vxl-spacing-bottom { padding-bottom: var(--spectrum-spacing-1000, 80px)
   line-height: var(--spectrum-body-line-height, var(--spectrum-line-height-200, 1.5));
 }
 
-/* Detail */
-.detail-l {
-  font-family: var(--spectrum-sans-serif-font-family, var(--spectrum-default-font-family, system-ui, sans-serif));
-  font-size: var(--spectrum-detail-size-l, 0.875rem);
-  font-weight: var(--spectrum-detail-sans-serif-font-weight, var(--spectrum-regular-font-weight, 400));
-  line-height: var(--spectrum-detail-line-height, var(--spectrum-line-height-200, 1.5));
-}
-.detail-m {
-  font-family: var(--spectrum-sans-serif-font-family, var(--spectrum-default-font-family, system-ui, sans-serif));
-  font-size: var(--spectrum-detail-size-m, 0.8125rem);
-  font-weight: var(--spectrum-detail-sans-serif-font-weight, var(--spectrum-regular-font-weight, 400));
-  line-height: var(--spectrum-detail-line-height, var(--spectrum-line-height-200, 1.5));
-}
-.detail-s {
-  font-family: var(--spectrum-sans-serif-font-family, var(--spectrum-default-font-family, system-ui, sans-serif));
-  font-size: var(--spectrum-detail-size-s, 0.75rem);
-  font-weight: var(--spectrum-detail-sans-serif-font-weight, var(--spectrum-regular-font-weight, 400));
-  line-height: var(--spectrum-detail-line-height, var(--spectrum-line-height-200, 1.5));
+
+/* Heading presets apply only to headings (h1–h6). */
+.heading-xxxl h1, .heading-xxxl h2, .heading-xxxl h3, .heading-xxxl h4, .heading-xxxl h5, .heading-xxxl h6,
+.heading-xxl h1, .heading-xxl h2, .heading-xxl h3, .heading-xxl h4, .heading-xxl h5, .heading-xxl h6,
+.heading-xl h1, .heading-xl h2, .heading-xl h3, .heading-xl h4, .heading-xl h5, .heading-xl h6,
+.heading-l h1, .heading-l h2, .heading-l h3, .heading-l h4, .heading-l h5, .heading-l h6,
+.heading-m h1, .heading-m h2, .heading-m h3, .heading-m h4, .heading-m h5, .heading-m h6,
+.heading-s h1, .heading-s h2, .heading-s h3, .heading-s h4, .heading-s h5, .heading-s h6,
+.heading-xs h1, .heading-xs h2, .heading-xs h3, .heading-xs h4, .heading-xs h5, .heading-xs h6,
+.heading-xxs h1, .heading-xxs h2, .heading-xxs h3, .heading-xxs h4, .heading-xxs h5, .heading-xxs h6 {
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: inherit;
 }
 
-/* Inherit typography so h1–h6 and p use the preset instead of browser defaults */
-.heading-xxxl h1, .heading-xxxl h2, .heading-xxxl h3, .heading-xxxl h4, .heading-xxxl h5, .heading-xxxl h6, .heading-xxxl p,
-.heading-xxl h1, .heading-xxl h2, .heading-xxl h3, .heading-xxl h4, .heading-xxl h5, .heading-xxl h6, .heading-xxl p,
-.heading-xl h1, .heading-xl h2, .heading-xl h3, .heading-xl h4, .heading-xl h5, .heading-xl h6, .heading-xl p,
-.heading-l h1, .heading-l h2, .heading-l h3, .heading-l h4, .heading-l h5, .heading-l h6, .heading-l p,
-.heading-m h1, .heading-m h2, .heading-m h3, .heading-m h4, .heading-m h5, .heading-m h6, .heading-m p,
-.heading-s h1, .heading-s h2, .heading-s h3, .heading-s h4, .heading-s h5, .heading-s h6, .heading-s p,
-.heading-xs h1, .heading-xs h2, .heading-xs h3, .heading-xs h4, .heading-xs h5, .heading-xs h6, .heading-xs p,
-.heading-xxs h1, .heading-xxs h2, .heading-xxs h3, .heading-xxs h4, .heading-xxs h5, .heading-xxs h6, .heading-xxs p,
-.body-xxxl h1, .body-xxxl h2, .body-xxxl h3, .body-xxxl h4, .body-xxxl h5, .body-xxxl h6, .body-xxxl p,
-.body-xxl h1, .body-xxl h2, .body-xxl h3, .body-xxl h4, .body-xxl h5, .body-xxl h6, .body-xxl p,
-.body-xl h1, .body-xl h2, .body-xl h3, .body-xl h4, .body-xl h5, .body-xl h6, .body-xl p,
-.body-l h1, .body-l h2, .body-l h3, .body-l h4, .body-l h5, .body-l h6, .body-l p,
-.body-m h1, .body-m h2, .body-m h3, .body-m h4, .body-m h5, .body-m h6, .body-m p,
-.body-s h1, .body-s h2, .body-s h3, .body-s h4, .body-s h5, .body-s h6, .body-s p,
-.body-xs h1, .body-xs h2, .body-xs h3, .body-xs h4, .body-xs h5, .body-xs h6, .body-xs p,
-.detail-l h1, .detail-l h2, .detail-l h3, .detail-l h4, .detail-l h5, .detail-l h6, .detail-l p,
-.detail-m h1, .detail-m h2, .detail-m h3, .detail-m h4, .detail-m h5, .detail-m h6, .detail-m p,
-.detail-s h1, .detail-s h2, .detail-s h3, .detail-s h4, .detail-s h5, .detail-s h6, .detail-s p {
+/* Body presets apply only to p. */
+.body-xxxl p, .body-xxl p, .body-xl p, .body-l p, .body-m p, .body-s p, .body-xs p {
   font-family: inherit;
   font-size: inherit;
   font-weight: inherit;

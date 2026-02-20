@@ -1,4 +1,4 @@
-import { createTag, getConfig, getFederatedContentRoot } from '../../utils/utils.js';
+import { createTag } from '../../utils/utils.js';
 
 let captionsLangMapPromise = null;
 
@@ -140,25 +140,7 @@ export default function init(block) {
   }
 
   try {
-    const url = new URL(link.href);
-    const { atvCaptionsKey, locale } = getConfig();
-    const geo = (locale?.prefix || '').replace('/langstore', '').replace('/', '');
-    const federalCR = atvCaptionsKey && getFederatedContentRoot();
-
-    if (geo && federalCR && url.searchParams.has('captions')) {
-      if (!captionsLangMapPromise) {
-        const captionsUrl = `${federalCR}/federal/assets/data/adobetv-captions.json?sheet=${atvCaptionsKey}`;
-        captionsLangMapPromise = fetch(captionsUrl).then((res) => {
-          if (!res.ok) {
-            return new Promise(() => { throw new Error(`Failed to fetch ${captionsUrl}`); });
-          }
-          return res.json();
-        });
-      }
-      createIframeWithCaptions(block, url, geo);
-    } else {
-      createIframe(block);
-    }
+    createIframe(block);
   } catch (error) {
     logError('AdobeTV init', error);
   }
