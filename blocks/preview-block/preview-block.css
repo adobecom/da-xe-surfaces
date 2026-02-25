@@ -1,0 +1,7 @@
+/*
+ * Copyright 2022 Adobe. All rights reserved.
+ * Preview-block is typically hidden; used for redirect metadata (layout, environment, targetApp).
+ */
+.preview-block {
+  display: none;
+}

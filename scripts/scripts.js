@@ -10,91 +10,109 @@
  * governing permissions and limitations under the License.
  */
 
-export const [setLibs, getLibs] = (() => {
-  let libs;
-  return [
-    (prodLibs, location) => {
-      libs = (() => {
-        const { hostname, search } = location || window.location;
-        if (!(hostname.includes('.aem.') || hostname.includes('local'))) return prodLibs;
-        const branch = new URLSearchParams(search).get('milolibs') || 'main';
-        if (branch === 'local') return 'http://localhost:6456/libs';
-        return branch.includes('--') ? `https://${branch}.aem.live/libs` : `https://${branch}--milo--adobecom.aem.live/libs`;
-      })();
-      return libs;
-    }, () => libs,
-  ];
-})();
 
 
-function decorateArea(area = document) {
-  const eagerLoad = (parent, selector) => {
-    const img = parent.querySelector(selector);
-    img?.removeAttribute('loading');
-  };
+/** Fallback Boost app base when preview-metadata has no targetApp or environment. */
+const DEFAULT_BOOST_APP_BASE = 'https://dev.hollywoodstudios.corp.adobe.com:9000';
 
-  (async function loadLCPImage() {
-    const marquee = document.querySelector('.marquee');
-    if (!marquee) {
-      eagerLoad(document, 'img');
-      return;
-    }
-  
-    // First image of first row
-    eagerLoad(marquee, 'div:first-child img');
-    // Last image of last column of last row
-    eagerLoad(marquee, 'div:last-child > div:last-child img');
-  }());
+/**
+ * Resolve Boost app base URL from preview-metadata.
+ * Uses targetApp only when it is a full URL (e.g. https://...); otherwise uses environment or default.
+ */
+function getBoostAppBase(preview) {
+  const raw = (preview?.targetApp || '').trim();
+  if (raw && (raw.startsWith('http://') || raw.startsWith('https://'))) {
+    return raw.replace(/\/$/, '');
+  }
+  if (preview?.environment === 'dev') return 'https://dev.hollywoodstudios.corp.adobe.com:9000';
+  return DEFAULT_BOOST_APP_BASE;
 }
 
-// Add project-wide style path here.
-const STYLES = '';
-
-// Use 'https://www.adobe.com/libs' if you cannot map '/libs' to milo's origin and ensure you don't run into CORS issues.
-const LIBS = '/libs';
-
-// Add any config options.
-const CONFIG = {
-  // codeRoot: '',
-  // contentRoot: '',
-  // imsClientId: 'college',
-  // imsScope: 'AdobeID,openid,gnav',
-  // geoRouting: 'off',
-  // fallbackRouting: 'off',
-  // iconsExcludeBlocks: [],
-  decorateArea,
-  locales: {
-    '': { ietf: 'en-US', tk: 'hah7vzn.css' },
-    de: { ietf: 'de-DE', tk: 'hah7vzn.css' },
-    kr: { ietf: 'ko-KR', tk: 'zfo3ouc' },
-  },
-};
-
-// Decorate the page with site specific needs.
-decorateArea();
-
-/*
- * ------------------------------------------------------------
- * Edit below at your own risk
- * ------------------------------------------------------------
+/**
+ * Build the plain.html URL for the current page (same origin + path → .plain.html).
+ * e.g. / → index.plain.html, /foo/ → foo/index.plain.html, /bar.html → bar.plain.html
  */
+function getCurrentPlainHtmlUrl() {
+  const { origin, pathname } = window.location;
+  const base = pathname === '/' || pathname === '' ? '/' : pathname.replace(/\/$/, '') || '/';
+  if (base === '/' || pathname.endsWith('/')) {
+    return `${origin}${base}index.plain.html`;
+  }
+  if (/\.html?$/i.test(pathname)) {
+    return `${origin}${pathname.replace(/\.html?$/i, '')}.plain.html`;
+  }
+  return `${origin}${pathname}.plain.html`;
+}
 
-const miloLibs = setLibs(LIBS);
+/**
+ * Parse preview-metadata "params" row: "layout: tray | environment: dev | targetApp: cch".
+ * Returns { layout, environment, targetApp }.
+ */
+function parsePreviewMetadataParams(block) {
+  const data = { layout: '', environment: '', targetApp: '' };
+  if (!block?.children?.length) return data;
+  for (const row of block.children) {
+    const cells = [...row.children];
+    if (cells.length < 2) continue;
+    const key = (cells[0].textContent || '').trim().toLowerCase();
+    const value = (cells[1].textContent || '').trim();
+    if (key !== 'params' || !value) continue;
+    value.split(/\s*\|\s*/).forEach((part) => {
+      const colon = part.indexOf(':');
+      if (colon === -1) return;
+      const k = part.slice(0, colon).trim().toLowerCase().replace(/\s+/g, '');
+      const v = part.slice(colon + 1).trim();
+      if (!v) return;
+      if (k === 'layout') data.layout = v;
+      else if (k === 'environment') data.environment = v;
+      else if (k === 'targetapp') data.targetApp = v;
+    });
+    break;
+  }
+  return data;
+}
 
-(function loadStyles() {
-  const paths = [`${miloLibs}/styles/styles.css`];
-  if (STYLES) { paths.push(STYLES); }
-  paths.forEach((path) => {
-    const link = document.createElement('link');
-    link.setAttribute('rel', 'stylesheet');
-    link.setAttribute('href', path);
-    document.head.appendChild(link);
-  });
-}());
+/**
+ * Parse preview-metadata block from HTML.
+ * Supports single-row format: params → "layout: tray | environment: dev | targetApp: cch".
+ */
+function parsePreviewBlockFromHtml(html) {
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  const block = doc.querySelector('.preview-metadata') || doc.querySelector('[class*="preview-metadata"]')
+    || doc.querySelector('.preview-block') || doc.querySelector('[class*="preview-block"]');
+  const fromPreview = block ? parsePreviewMetadataParams(block) : {};
+  return {
+    layout: fromPreview.layout || '',
+    environment: fromPreview.environment || '',
+    targetApp: fromPreview.targetApp || '',
+  };
+}
 
-(async function loadPage() {
-  const { loadArea, setConfig } = await import(`${miloLibs}/utils/utils.js`);
-  const config = setConfig({ ...CONFIG, miloLibs });
-  console.log(config);
-  await loadArea();
-}());
+/**
+ * Redirect to Boost app using preview-metadata (layout, environment, targetApp) from plain.html.
+ * Fetches plain.html, parses .preview-metadata, then redirects to targetApp/boost?url=plainUrl.
+ */
+async function redirectToBoost() {
+  const plainUrl = getCurrentPlainHtmlUrl();
+  let preview = {};
+
+  try {
+    const res = await fetch(plainUrl);
+    if (res.ok) {
+      const html = await res.text();
+      preview = parsePreviewBlockFromHtml(html);
+    }
+  } catch (_) {
+    // use defaults
+  }
+
+  const base = getBoostAppBase(preview);
+  const boostPath = '/boost';
+  const layout = (preview.layout || '');
+  const boostUrl = `${base}${boostPath}?url=${plainUrl}${layout ? `&layout=${encodeURIComponent(layout)}` : ''}`;
+  window.location.replace(boostUrl);
+}
+
+
+// Redirect to Boost app using preview-block (layout, environment, targetApp); Milo blocks are not loaded.
+(async () => { await redirectToBoost(); })();
