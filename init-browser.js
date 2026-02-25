@@ -1,17 +1,18 @@
+/**
+ * Browser-friendly entry for <xe-sites>: no CSS imports (load CSS via <link> in the page).
+ * Use this when loading init as raw ES modules (e.g. xe-sites-test.html).
+ * For webpack/bundled use, use init.js instead.
+ */
 import { LitElement, html } from 'lit';
-import { loadArea, setConfig, customFetch, setupLinkClickHandler, XE_SITES_EVENT } from './utils/utils.js';
+import { loadArea, setConfig, customFetch, setupLinkClickHandler } from './utils/utils.js';
 
-// SWC 0.47.2 — matches nest (adobe-home-web)
 import '@spectrum-web-components/theme/sp-theme.js';
 import '@spectrum-web-components/theme/core.js';
 import '@spectrum-web-components/theme/scale-medium.js';
 import '@spectrum-web-components/theme/theme-light.js';
 import '@spectrum-web-components/theme/theme-dark.js';
-// Spectrum Two (S2) — use theme-system="spectrum-two" to align with React Spectrum S2
-import '@spectrum-web-components/theme/src/spectrum-two/themes-core-tokens.js';
 import '@spectrum-web-components/button/sp-button.js';
 
-// Static block JS imports (webpack can't dynamically resolve via file: symlink)
 import pageMetadataDecorate from './blocks/page-metadata/page-metadata.js';
 import rowCardDecorate from './blocks/row-card/row-card.js';
 import textDecorate from './blocks/text/text.js';
@@ -19,21 +20,9 @@ import urlMetadataDecorate from './blocks/url-metadata/url-metadata.js';
 import adobetvDecorate from './blocks/adobetv/adobetv.js';
 import fragmentDecorate from './blocks/fragment/fragment.js';
 
-// Static CSS imports — webpack bundles these (runtime loadCSS would 404 in nest)
-import './styles/styles.css';
-import './blocks/page-metadata/page-metadata.css';
-import './blocks/row-card/row-card.css';
-import './blocks/text/text.css';
-import './blocks/url-metadata/url-metadata.css';
-import './blocks/adobetv/adobetv.css';
-import './blocks/fragment/fragment.css';
-
-// Skip runtime CSS loading (files aren't served by nest, webpack already bundled them)
 window.app = window.app || {};
 window.app.BUILD_MODE = 'builtin';
 
-// Block registry — loadBlock checks this before attempting dynamic import.
-// Align with blocks in repo + utils LOCAL_BLOCKS.
 window.xeBlockRegistry = {
   'page-metadata': pageMetadataDecorate,
   fragment: fragmentDecorate,
@@ -45,9 +34,6 @@ window.xeBlockRegistry = {
 
 export const XE_SITES_TAG = 'xe-sites';
 
-/**
- * Resolves theme (light | dark) from URL, defaulting to light. Matches scripts.js behavior.
- */
 function getThemeFromUrl() {
   const params = new URLSearchParams(window.location.search);
   const fromQuery = params.get('theme')?.toLowerCase();
@@ -71,19 +57,14 @@ export default class XeSites extends LitElement {
   static properties = {
     path: { type: String },
     loadError: { type: String },
-    /** Theme for sp-theme: 'light' | 'dark'. Overrides URL when set (e.g. Boost). */
-    theme: { type: String, reflect: true },
-    /** Scale for sp-theme: 'medium' | 'large'. Default 'medium'. */
-    scale: { type: String, reflect: true },
-    /** Theme system: 'spectrum' (classic) or 'spectrum-two' (S2). Default 'spectrum'. */
-    themeSystem: { type: String, reflect: true },
+    theme: { type: String },
+    scale: { type: String },
     /** Environment for URL resolution: 'stage' | 'prod'. Passed from host (e.g. Boost). */
     environment: { type: String, reflect: true },
     /** Host app type for URL slot: 'cch' | 'ccd'. Passed from host (e.g. Boost). */
     host: { type: String, reflect: true },
   };
 
-  // Render in light DOM so block CSS and SWC styles apply
   createRenderRoot() {
     return this;
   }
@@ -94,7 +75,6 @@ export default class XeSites extends LitElement {
     this.loadError = '';
     this.theme = '';
     this.scale = '';
-    this.themeSystem = '';
     this.environment = '';
     this.host = '';
   }
@@ -109,47 +89,19 @@ export default class XeSites extends LitElement {
     if (changedProperties.has('path') && this.hasUpdated) {
       this.loadFragment(this.path);
     }
-    const themeOrScaleChanged = changedProperties.has('theme')
-      || changedProperties.has('scale')
-      || changedProperties.has('themeSystem');
-    if (themeOrScaleChanged && this.hasUpdated) {
+    if ((changedProperties.has('theme') || changedProperties.has('scale')) && this.hasUpdated) {
       this.syncThemeAttrs();
     }
   }
 
-  /**
-   * Resolve sp-theme system, color, and scale from xe-sites props.
-   * When themeSystem is 'spectrum-two', uses S2 fragment names (aligns with React Spectrum S2).
-   */
-  getThemeAttrs() {
-    const system = (this.themeSystem && this.themeSystem.trim()) || 'spectrum';
-    const lightDark = (this.theme && this.theme.trim()) || getThemeFromUrl();
-    const scaleInput = (this.scale && this.scale.trim()) || 'medium';
-    if (system === 'spectrum-two') {
-      return {
-        system: 'spectrum-two',
-        color: lightDark === 'dark' ? 'dark-spectrum-two' : 'light-spectrum-two',
-        scale: scaleInput === 'large'
-          ? 'large-spectrum-two'
-          : 'medium-spectrum-two',
-      };
-    }
-    return {
-      system: 'spectrum',
-      color: lightDark,
-      scale: scaleInput,
-    };
-  }
-
-  /** Apply current theme/scale/system to the sp-theme inside the fragment container. */
   syncThemeAttrs() {
     const container = this.querySelector('#fragment-container');
     const themeEl = container?.querySelector('sp-theme');
     if (!themeEl) return;
-    const { system, color, scale } = this.getThemeAttrs();
-    themeEl.setAttribute('system', system);
-    themeEl.setAttribute('color', color);
-    themeEl.setAttribute('scale', scale);
+    const scaleVal = (this.scale && this.scale.trim()) || 'medium';
+    const themeVal = (this.theme && this.theme.trim()) || getThemeFromUrl();
+    themeEl.setAttribute('scale', scaleVal);
+    themeEl.setAttribute('color', themeVal);
   }
 
   async loadFragment(url) {
@@ -214,10 +166,10 @@ export default class XeSites extends LitElement {
       this.clearFragmentContent();
 
       const themeEl = document.createElement('sp-theme');
-      const { system, color, scale } = this.getThemeAttrs();
-      themeEl.setAttribute('system', system);
-      themeEl.setAttribute('color', color);
-      themeEl.setAttribute('scale', scale);
+      const scaleVal = (this.scale && this.scale.trim()) || 'medium';
+      const themeVal = (this.theme && this.theme.trim()) || getThemeFromUrl();
+      themeEl.setAttribute('scale', scaleVal);
+      themeEl.setAttribute('color', themeVal);
       themeEl.appendChild(main);
 
       this.querySelector('#fragment-container').appendChild(themeEl);
@@ -231,26 +183,10 @@ export default class XeSites extends LitElement {
       main.querySelectorAll('img[src], picture source[srcset]').forEach((el) => {
         el.setAttribute('referrerpolicy', 'no-referrer');
       });
-      const { body } = document;
-      this.dispatchEvent(new CustomEvent(XE_SITES_EVENT, {
-        bubbles: true,
-        detail: {
-          type: 'system',
-          subType: 'loaded',
-          data: {
-            contentId: body?.getAttribute?.('data-content-id') || '',
-            contentName: body?.getAttribute?.('data-content-name') || '',
-          },
-        },
-      }));
     } catch (error) {
       if (loadId !== this.fragmentRequestId) return;
       this.loadError = error instanceof Error ? error.message : String(error);
       this.clearFragmentContent();
-      this.dispatchEvent(new CustomEvent(XE_SITES_EVENT, {
-        bubbles: true,
-        detail: { type: 'system', subType: 'error', data: { message: this.loadError } },
-      }));
       // eslint-disable-next-line no-console
       console.error('xe-sites: Error loading fragment:', error);
     }

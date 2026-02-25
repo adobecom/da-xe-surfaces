@@ -27,6 +27,26 @@ module.exports = {
       files: ['test/**/*.js'],
       rules: { 'no-console': 'off' },
     },
+    {
+      files: ['utils/utils.js', 'scripts/scripts.js'],
+      rules: {
+        'max-len': ['warn', { code: 120, ignoreUrls: true, ignoreStrings: true }],
+        'no-restricted-syntax': 'off',
+        'no-await-in-loop': 'off',
+        'no-continue': 'off',
+        'import/no-extraneous-dependencies': 'off',
+      },
+    },
+    {
+      files: ['utils/decorate.js'],
+      rules: {
+        'max-len': ['warn', { code: 120 }],
+      },
+    },
+    {
+      files: ['web-test-runner.config.js'],
+      rules: { 'import/no-extraneous-dependencies': 'off' },
+    },
   ],
   plugins: [
     'chai-friendly',

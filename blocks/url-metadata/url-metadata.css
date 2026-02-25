@@ -1,0 +1,4 @@
+/* url-metadata: populates URL map; block can be hidden */
+main .url-metadata.block {
+  display: none;
+}

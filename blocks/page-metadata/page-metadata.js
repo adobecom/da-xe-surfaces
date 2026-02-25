@@ -1,15 +1,19 @@
 /**
  * Page-metadata block: key/value rows (e.g. Style | Value) are applied to the whole page.
- * Supported keys: "class" (or "classes"), "style" → added to document.body (classes or data-style).
+ * Supported keys:
+ * - "class" (or "classes") → added to document.body
+ * - "style" → spacing pattern → sp-theme/body; else data-style + class
+ * - "analyticsParams" → "name: X | id: Y" sets data-content-name, data-content-id
  */
 export default function decorate(block) {
   const rows = [...block.children];
   if (!rows.length) return;
 
-  const body = document.body;
+  const { body } = document;
   const getCells = (row) => [...row.children];
   const isHeaderRow = (cells) => {
-    const v = (cells[1]?.textContent || '').trim().toLowerCase();
+    const secondCell = cells[1];
+    const v = (secondCell?.textContent || '').trim().toLowerCase();
     return v === 'value' || v === 'values' || v === 'value(s)';
   };
 
@@ -23,11 +27,22 @@ export default function decorate(block) {
 
     if (key === 'class' || key === 'classes') {
       value.split(/\s+/).filter(Boolean).forEach((c) => body.classList.add(c));
-    } else if (key === 'style') {
-      body.dataset.style = value;
-      body.classList.add(value);
-    } else if (key === 'padding') {
-      body.style.padding = value;
+    } else if (key === 'analyticsparams' || key === 'analytics-params') {
+      // Parse pipe syntax: "name: Page Name | id: page-id | subcategory: X"
+      const parts = value.split('|').map((p) => p.trim());
+
+      parts.forEach((part) => {
+        const idMatch = part.match(/^id\s*:\s*(.+)$/i);
+        if (idMatch) {
+          body.setAttribute('data-content-id', idMatch[1].trim());
+          return;
+        }
+
+        const nameMatch = part.match(/^name\s*:\s*(.+)$/i);
+        if (nameMatch) {
+          body.setAttribute('data-content-name', nameMatch[1].trim());
+        }
+      });
     } else {
       body.dataset[key.replace(/\s+/g, '-')] = value;
     }

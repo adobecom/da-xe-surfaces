@@ -1,0 +1,16 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, sans-serif;
+  line-height: 1.5;
+}
+
+code {
+  font-family: ui-monospace, monospace;
+  background: #eee;
+  padding: 0.15em 0.35em;
+  border-radius: 4px;
+}

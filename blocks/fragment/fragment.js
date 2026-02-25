@@ -1,3 +1,4 @@
+/* eslint-disable max-classes-per-file, no-restricted-syntax */
 import { createTag, getConfig, loadArea, localizeLink, customFetch } from '../../utils/utils.js';
 
 const fragMap = {};
@@ -62,14 +63,14 @@ function replaceDotMedia(path, doc) {
 }
 
 export default async function init(a) {
-  const { decorateArea, mep, placeholders } = getConfig();
+  const { decorateArea, mep } = getConfig();
   let relHref = localizeLink(a.href);
   let inline = false;
 
   if (a.parentElement?.nodeName === 'P') {
     const children = a.parentElement.childNodes;
     const div = createTag('div');
-    for (const attr of a.parentElement.attributes) div.setAttribute(attr.name, attr.value);
+    [...a.parentElement.attributes].forEach((attr) => div.setAttribute(attr.name, attr.value));
     a.parentElement.replaceWith(div);
     div.append(...children);
   }
@@ -87,7 +88,7 @@ export default async function init(a) {
 
   let resourcePath = a.href;
   if (window.hlx.contentBaseRoot) {
-    resourcePath = `${window.hlx.contentBaseRoot}${a.getAttribute("href")}`;
+    resourcePath = `${window.hlx.contentBaseRoot}${a.getAttribute('href')}`;
   }
 
   if (a.href.includes('/federal/')) {

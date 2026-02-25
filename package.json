@@ -6,6 +6,7 @@
   "version": "1.0.0",
   "description": "Website foundation technology.",
   "scripts": {
+    "react-test": "npm run dev --prefix react-xe-sites-test",
     "test": "wtr \"./test/**/*.test.js\" --node-resolve --port=2000 --coverage",
     "test:watch": "npm test -- --watch",
     "lint": "npm run lint:js && npm run lint:css",
@@ -32,6 +33,7 @@
     "@web/test-runner": "0.13.27",
     "@web/test-runner-commands": "0.6.1",
     "chai": "4.3.6",
+    "css-loader": "^7.1.4",
     "eslint": "8.11.0",
     "eslint-config-airbnb-base": "15.0.0",
     "eslint-plugin-chai-friendly": "^0.7.2",
@@ -39,16 +41,17 @@
     "eslint-plugin-ecmalist": "^1.0.8",
     "eslint-plugin-import": "2.25.4",
     "sinon": "13.0.1",
+    "style-loader": "^4.0.0",
     "stylelint": "14.6.0",
     "stylelint-config-prettier": "9.0.3",
     "stylelint-config-standard": "25.0.0",
-    "swc-loader": "^0.2.6"
+    "swc-loader": "^0.2.6",
+    "webpack": "^5.105.2",
+    "webpack-cli": "^6.0.1"
   },
   "dependencies": {
-    "lit": "^3.3.2"
-  },
-  "peerDependencies": {
-    "@spectrum-web-components/button": "^1.11.2",
-    "@spectrum-web-components/theme": "^1.11.2"
+    "lit": "^2.7.3",
+    "@spectrum-web-components/button": "0.47.2",
+    "@spectrum-web-components/theme": "0.47.2"
   }
 }

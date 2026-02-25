@@ -1,29 +1,13 @@
-const MILO_BLOCKS = [
-  'fragment',
-  'hva-card',
+const LOCAL_BLOCKS = [
+  'adobe-tv',
+  'row-card',
+  'text',
   'page-metadata',
-  'section-metadata',
-  'video',
+  'url-metadata',
 ];
 
 const AUTO_BLOCKS = [
-  { adobetv: 'tv.adobe.com' },
-  { gist: 'https://gist.github.com' },
-  // { caas: '/tools/caas' },
-  // { faas: '/tools/faas' },
-  { fragment: '/de-xe-surfaces/', styles: false },
-  // { instagram: 'https://www.instagram.com' },
-  // { slideshare: 'https://www.slideshare.net', styles: false },
-  // { tiktok: 'https://www.tiktok.com', styles: false },
-  // { twitter: 'https://twitter.com' },
-  { vimeo: 'https://vimeo.com' },
-  { vimeo: 'https://player.vimeo.com' },
-  { youtube: 'https://www.youtube.com' },
-  { youtube: 'https://youtu.be' },
-  // { 'pdf-viewer': '.pdf', styles: false },
-  { video: '.mp4' },
-  // { merch: '/tools/ost?' },
-  // { 'mas-autoblock': 'mas.adobe.com/studio' },
+
 ];
 
 const DO_NOT_INLINE = [
@@ -36,7 +20,7 @@ const PAGE_URL = new URL(window.location.href);
 const LANGSTORE = 'langstore';
 const PREVIEW = 'target-preview';
 
-export const SLD = PAGE_URL.hostname.includes('.aem.') ? 'aem' : 'hlx';
+const SLD = PAGE_URL.hostname.includes('.aem.') ? 'aem' : 'hlx';
 
 const ENVS = {
   stage: {
@@ -53,7 +37,45 @@ ENVS.local = {
   name: 'local',
 };
 
-export function getLocale(locales, pathname = window.location.pathname) {
+/** URL metadata: shorthand → { cchstage?, cchprod?, ccdstage?, ccdprod?, sso? }. Keys come from block classes.
+ * Populated by url-metadata block(s); entries merge when same shorthand. */
+const urlMetadataMap = new Map();
+
+export function setUrlMetadata(entries) {
+  if (!entries || typeof entries !== 'object') return;
+  Object.entries(entries).forEach(([key, val]) => {
+    const k = key.trim().toLowerCase();
+    const existing = urlMetadataMap.get(k);
+    const merged = existing && typeof existing === 'object' && typeof val === 'object'
+      ? { ...existing, ...val }
+      : val;
+    urlMetadataMap.set(k, merged);
+  });
+}
+
+/**
+ * Get the full url-metadata entry for a shorthand (URL slots + optional sso).
+ * Entry keys are slot names from block classes: cchstage, cchprod, ccdstage, ccdprod, sso (object).
+ * @param {string} shorthand - Key from url-metadata (e.g. 'openFireflyOnWeb')
+ * @returns {{ cchstage?: string, cchprod?: string, ccdstage?: string,
+ *  ccdprod?: string, sso?: Record<string, string> }|null}
+ */
+export function getUrlMetadataEntry(shorthand) {
+  if (!shorthand?.trim()) return null;
+  return urlMetadataMap.get(shorthand.trim().toLowerCase()) || null;
+}
+
+/**
+ * Return the federated URL for a given href (e.g. /federal/...).
+ * Fragment block uses this for federal fragment links. Passthrough by default.
+ * @param {string} href - Link href
+ * @returns {string} URL to fetch (same as href unless overridden)
+ */
+export function getFederatedUrl(href) {
+  return typeof href === 'string' ? href : '';
+}
+
+function getLocale(locales, pathname = window.location.pathname) {
   if (!locales) {
     return { ietf: 'en-US', tk: 'hah7vzn.css', prefix: '' };
   }
@@ -72,7 +94,7 @@ export function getLocale(locales, pathname = window.location.pathname) {
   return locale;
 }
 
-export function getEnv(conf) {
+function getEnv(conf) {
   const { host } = window.location;
   const query = PAGE_URL.searchParams.get('env');
 
@@ -115,7 +137,7 @@ const handleEntitlements = (() => {
   };
 })();
 
-export const [setConfig, updateConfig, getConfig] = (() => {
+export const [setConfig, getConfig] = (() => {
   let config = {};
   return [
     (conf) => {
@@ -142,7 +164,7 @@ export const [setConfig, updateConfig, getConfig] = (() => {
           || 'ltr';
         document.documentElement.setAttribute('dir', dir);
       } catch (e) {
-        console.log('Invalid or missing locale:', e);
+        // console.log('Invalid or missing locale:', e);
       }
       config.locale.contentRoot = `${origin}${config.locale.prefix}${config.contentRoot ?? ''}`;
       config.useDotHtml = !PAGE_URL.origin.includes(`.${SLD}.`)
@@ -152,286 +174,204 @@ export const [setConfig, updateConfig, getConfig] = (() => {
       setupMiloObj(config);
       return config;
     },
-    (conf) => (config = conf),
     () => config,
   ];
 })();
 
-export function decorateImageLinks(el) {
-  const images = el.querySelectorAll('img[alt*="|"]');
-  if (!images.length) return;
-  [...images].forEach((img) => {
-    const [source, alt, icon] = img.alt.split('|');
-    try {
-      const url = new URL(source.trim());
-      const href = url.hostname.includes(`.${SLD}.`) ? `${url.pathname}${url.hash}` : url.href;
-      if (alt?.trim().length) img.alt = alt.trim();
-      const pic = img.closest('picture');
-      const picParent = pic.parentElement;
-      if (href.includes('.mp4')) {
-        const a = createTag('a', { href: url, 'data-video-poster': pic.outerHTML });
-        a.innerHTML = url;
-        pic.replaceWith(a);
-      } else {
-        const aTag = createTag('a', { href, class: 'image-link' });
-        picParent.insertBefore(aTag, pic);
-        if (icon) {
-        } else {
-          aTag.append(pic);
-        }
-      }
-    } catch (e) {
-      console.log('Error:', `${e.message} '${source.trim()}'`);
-    }
-  });
-}
-
-export function appendHtmlToLink(link) {
-  const { useDotHtml } = getConfig();
-  if (!useDotHtml) return;
-  const href = link.getAttribute('href');
-  if (!href?.length) return;
-
-  const { autoBlocks = [], htmlExclude = [] } = getConfig();
-
-  const HAS_EXTENSION = /\..*$/;
-  let url = { pathname: href };
-
-  try { url = new URL(href, PAGE_URL); } catch (e) { /* do nothing */ }
-
-  if (!(href.startsWith('/') || href.startsWith(PAGE_URL.origin))
-    || url.pathname?.endsWith('/')
-    || href === PAGE_URL.origin
-    || HAS_EXTENSION.test(href.split('/').pop())
-    || htmlExclude?.some((excludeRe) => excludeRe.test(href))) {
-    return;
+/** Slot name for current env: cchstage | cchprod | ccdstage | ccdprod (matches block class names). */
+function getCurrentUrlSlot() {
+  const conf = getConfig();
+  const env = conf.environment ?? conf.env?.name;
+  const type = conf.host;
+  if (type === 'cch' || type === 'ccd') {
+    const isStage = env === 'stage' || env === 'dev' || !env;
+    return type + (isStage ? 'stage' : 'prod');
   }
-
-  const relativeAutoBlocks = autoBlocks
-    .map((b) => Object.values(b)[0])
-    .filter((b) => b.startsWith('/'));
-  const isAutoblockLink = relativeAutoBlocks.some((block) => href.includes(block));
-  if (isAutoblockLink) return;
-
-  try {
-    const linkUrl = new URL(href.startsWith('http') ? href : `${PAGE_URL.origin}${href}`);
-    if (linkUrl.pathname && !linkUrl.pathname.endsWith('.html')) {
-      linkUrl.pathname = `${linkUrl.pathname}.html`;
-      link.setAttribute('href', href.startsWith('/')
-        ? `${linkUrl.pathname}${linkUrl.search}${linkUrl.hash}`
-        : linkUrl.href);
-    }
-  } catch (e) {
-    window.lana?.log(`Error while attempting to append '.html' to ${link}: ${e}`);
-  }
-}
-
-export function decorateSVG(a) {
-  const { textContent, href } = a;
-  if (!(textContent.includes('.svg') || href.includes('.svg'))) return a;
-  try {
-    // Mine for URL and alt text
-    const splitText = textContent.split('|');
-    const authoredUrl = new URL(splitText.shift().trim());
-    const altText = splitText.join('|').trim();
-
-    // Relative link checking
-    const hrefUrl = a.href.startsWith('/')
-      ? new URL(`${window.location.origin}${a.href}`)
-      : new URL(a.href);
-
-    const src = (authoredUrl.hostname.includes('.hlx.') || authoredUrl.hostname.includes('.aem.'))
-      ? authoredUrl.pathname
-      : authoredUrl;
-
-    const img = createTag('img', { loading: 'lazy', src, alt: altText || '' });
-    const pic = createTag('picture', null, img);
-
-    if (authoredUrl.pathname === hrefUrl.pathname) {
-      a.parentElement.replaceChild(pic, a);
-      return pic;
-    }
-    a.textContent = '';
-    a.append(pic);
-    return a;
-  } catch (e) {
-    console.log('Failed to create SVG.', e.message);
-    return a;
-  }
-}
-
-export function decorateAutoBlock(a) {
-  const config = getConfig();
   const { hostname } = window.location;
-  let url;
-  try {
-    url = new URL(a.href);
-  } catch (e) {
-    window.lana?.log(`Cannot make URL from decorateAutoBlock - ${a?.href}: ${e.toString()}`);
-    return false;
-  }
+  const isStage = hostname.includes('stage') || hostname.includes('localhost');
+  const isCcd = hostname.includes('ccd');
+  return (isCcd ? 'ccd' : 'cch') + (isStage ? 'stage' : 'prod');
+}
 
-  const href = hostname === url.hostname
-  ? `${url.pathname}${url.search}${url.hash}`
-  : a.href;
+/**
+ * Resolve a URL shorthand to the full URL for the current environment and host.
+ * Uses url-metadata map; entry keys are slot names from block classes
+ * (cchstage, cchprod, ccdstage, ccdprod, ssodetails).
+ * @param {string} shorthand - Key from url-metadata (e.g. 'openFireflyOnWeb')
+ * @returns {string|null} Resolved URL or null if not found
+ */
+export function getResolvedUrl(shorthand) {
+  const entry = getUrlMetadataEntry(shorthand);
+  if (!entry || typeof entry !== 'object') return null;
+  const slot = getCurrentUrlSlot();
+  const url = entry[slot];
+  return typeof url === 'string' ? url.trim() : null;
+}
 
-  return config.autoBlocks.find((candidate) => {
-    const key = Object.keys(candidate)[0];
-    const match = href.includes(candidate[key]);
-    if (!match) return false;
+export async function decorateLinks(el) {
+  const anchors = el.getElementsByTagName('a');
 
-    if (key === 'pdf-viewer' && !a.textContent.includes('.pdf')) {
-      a.target = '_blank';
-      return false;
-    }
+  const links = [...anchors].reduce((rdx, a) => {
+    // Extract attributes using pipe syntax: "Text | Aria label"
+    // Maps to: aria-label, data-content-id, data-content-name
+    const textContent = a.textContent || '';
+    if (textContent.includes('|')) {
+      const parts = textContent.split('|').map((p) => p.trim());
+      if (parts.length > 1) {
+        a.setAttribute('aria-label', parts[1]);
 
-    const hasExtension = a.href.split('/').pop().includes('.');
-    const mp4Match = a.textContent.match('media_.*.mp4');
-    if (key === 'fragment' && (!hasExtension || mp4Match)) {
-      if (a.href === window.location.href) {
-        return false;
-      }
-
-      const isInlineFrag = url.hash.includes('#_inline');
-      if (url.hash === '' || isInlineFrag) {
-        const { parentElement } = a;
-        const { nodeName, innerHTML } = parentElement;
-        const noText = innerHTML === a.outerHTML;
-        if (noText && nodeName === 'P') {
-          const div = createTag('div', null, a);
-          parentElement.parentElement.replaceChild(div, parentElement);
+        // Remove the attribute parts from all text nodes
+        const walker = document.createTreeWalker(a, NodeFilter.SHOW_TEXT);
+        let node = walker.nextNode();
+        while (node) {
+          if (node.textContent.includes('|')) {
+            const pipeIndex = node.textContent.indexOf('|');
+            node.textContent = node.textContent.substring(0, pipeIndex).trim();
+            break;
+          }
+          node = walker.nextNode();
         }
       }
-
-      // previewing a fragment page with mp4 video
-      if (mp4Match) {
-        a.className = 'video link-block';
-        return false;
-      }
-
-      // Modals
-      if (url.hash !== '' && !isInlineFrag) {
-        a.dataset.modalPath = url.pathname;
-        a.dataset.modalHash = url.hash;
-        a.href = url.hash;
-        a.className = `modal link-block ${[...a.classList].join(' ')}`;
-        return true;
-      }
-    }
-
-    // slack uploaded mp4s
-    if (key === 'video' && !a.textContent.match('media_.*.mp4')) {
-      return false;
-    }
-
-    a.className = `${key} link-block`;
-    return true;
-  });
-}
-
-const decorateCopyLink = (a, evt) => {
-  const userAgent = navigator.userAgent.toLowerCase();
-  const isMobile = /android|iphone|mobile/.test(userAgent) && !/ipad/.test(userAgent);
-  if (!isMobile || !navigator.share) {
-    a.remove();
-    return;
-  }
-  const link = a.href.replace(evt, '');
-  const isConButton = ['EM', 'STRONG'].includes(a.parentElement.nodeName)
-    || a.classList.contains('con-button');
-  if (!isConButton) a.classList.add('static', 'copy-link');
-  a.href = '';
-  a.addEventListener('click', async (e) => {
-    e.preventDefault();
-    if (navigator.share) await navigator.share({ title: link, url: link });
-  });
-};
-
-export function convertStageLinks({ anchors, config, hostname, href }) {
-  const { env, stageDomainsMap, locale } = config;
-  if (env?.name === 'prod' || !stageDomainsMap) return;
-  const matchedRules = Object.entries(stageDomainsMap)
-    .find(([domain]) => (new RegExp(domain)).test(href));
-  if (!matchedRules) return;
-  const [, domainsMap] = matchedRules;
-  [...anchors].forEach((a) => {
-    const hasLocalePrefix = a.pathname.startsWith(`${locale.prefix}/`);
-    const noLocaleLink = hasLocalePrefix ? a.href.replace(locale.prefix, '') : a.href;
-    const matchedDomain = Object.keys(domainsMap)
-      .find((domain) => (new RegExp(domain)).test(noLocaleLink));
-    if (!matchedDomain) return;
-    const convertedLink = noLocaleLink.replace(
-      new RegExp(matchedDomain),
-      domainsMap[matchedDomain] === 'origin'
-        ? `${matchedDomain.includes('https') ? 'https://' : ''}${hostname}`
-        : domainsMap[matchedDomain],
-    );
-    const convertedUrl = new URL(convertedLink);
-    convertedUrl.pathname = `${hasLocalePrefix ? locale.prefix : ''}${convertedUrl.pathname}`;
-    a.href = convertedUrl.toString();
-    if (/(\.page|\.live).*\.html(?=[?#]|$)/.test(a.href)) a.href = a.href.replace(/\.html(?=[?#]|$)/, '');
-  });
-}
-
-export function decorateLinks(el) {
-  const config = getConfig();
-  decorateImageLinks(el);
-  const anchors = el.getElementsByTagName('a');
-  const { hostname, href } = window.location;
-  const links = [...anchors].reduce((rdx, a) => {
-    appendHtmlToLink(a);
-    if (a.href.includes('http:')) a.setAttribute('data-http-link', 'true');
-    a.href = localizeLink(a.href);
-    decorateSVG(a);
-    if (a.href.includes('#_blank')) {
-      a.setAttribute('target', '_blank');
-      a.href = a.href.replace('#_blank', '');
-    }
-    if (a.href.includes('#_nofollow')) {
-      a.setAttribute('rel', 'nofollow');
-      a.href = a.href.replace('#_nofollow', '');
-    }
-    if (a.href.includes('#_dnb')) {
-      a.href = a.href.replace('#_dnb', '');
-    } else {
-      const autoBlock = decorateAutoBlock(a);
-      if (autoBlock) {
-        rdx.push(a);
-      }
-    }
-    // Custom action links
-    const loginEvent = '#_evt-login';
-    if (a.href.includes(loginEvent)) {
-      a.href = a.href.replace(loginEvent, '');
-      a.addEventListener('click', (e) => {
-        e.preventDefault();
-        const { signInContext } = config;
-        window.adobeIMS?.signIn(signInContext);
-      });
-    }
-    const copyEvent = '#_evt-copy';
-    if (a.href.includes(copyEvent)) {
-      decorateCopyLink(a, copyEvent);
-    }
-    const branchQuickLink = 'app.link';
-
-    if (a.href.includes(branchQuickLink)) {
-      (async () => {
-      })();
-    }
-    // Append aria-label
-    const pipeRegex = /\s?\|([^|]*)$/;
-    if (pipeRegex.test(a.textContent) && !/\.[a-z]+/i.test(a.textContent)) {
-      const node = [...a.childNodes].reverse()[0];
-      const ariaLabel = node.textContent.match(pipeRegex)[1];
-      node.textContent = node.textContent.replace(pipeRegex, '');
-      a.setAttribute('aria-label', ariaLabel.trim());
     }
 
     return rdx;
   }, []);
-  convertStageLinks({ anchors, config, hostname, href });
   return links;
+}
+
+/**
+ * Normalize anchor href for resolution: if same-origin or hostname matches main-da-xe-surfaces
+ * and path is encoded (e.g. shorthand | content-id), strip origin and return decoded path.
+ * @param {string} href - Raw href from anchor
+ * @returns {string} Normalized href (decoded path only when applicable)
+ */
+function normalizeHrefForResolve(href) {
+  if (!href || typeof href !== 'string') return '';
+  const h = href.trim();
+  try {
+    const url = new URL(h, window.location.href);
+    const isSameOrigin = url.hostname === 'localhost' || url.hostname === '127.0.0.1'
+      || url.origin === window.location.origin;
+    const isMainDaXeSurfaces = url.hostname.includes('main--da-xe-surfaces');
+    const pathPart = (url.pathname || '').replace(/^\/+/, '') + url.search + url.hash;
+    const hasEncoded = /%[0-9A-Fa-f]{2}/.test(pathPart);
+    if ((isSameOrigin || isMainDaXeSurfaces) && pathPart && hasEncoded) {
+      return decodeURIComponent(pathPart);
+    }
+  } catch (_) {
+    // not a valid URL, return as-is
+  }
+  return h;
+}
+
+/**
+ * Resolve link hrefs that use url-metadata shorthand: "shorthand | data-content-id | data-content-name".
+ * Call after url-metadata block(s) have run so getResolvedUrl() can resolve the shorthand.
+ * @param {Document|Element} area - Root to search for anchors (default document)
+ */
+export function resolveLinkHrefs(area = document) {
+  const root = area === document ? document.body : area;
+  const anchors = root.querySelectorAll ? root.querySelectorAll('a[href]') : [];
+  anchors.forEach((a) => {
+    let href = a.getAttribute('href');
+    if (!href) return;
+    href = normalizeHrefForResolve(href);
+    try {
+      href = decodeURIComponent(href);
+    } catch (e) {
+      // leave href as-is if decoding fails (e.g. malformed %)
+    }
+    // Support " | " and encoded "%20%7C%20" / " %7C " so pipe-in-href works when encoded
+    let pipeSplit = null;
+    if (href.includes(' | ')) pipeSplit = ' | ';
+    else if (href.includes('%20%7C%20')) pipeSplit = '%20%7C%20';
+    else if (href.includes(' %7C ')) pipeSplit = ' %7C ';
+    let shorthand = null;
+    if (pipeSplit) {
+      const [shorthandPart, contentIdPart] = href.split(pipeSplit).map((p) => p.trim());
+      shorthand = shorthandPart;
+      if (contentIdPart) a.setAttribute('data-content-id', contentIdPart);
+    } else if (urlMetadataMap.has(href.trim().toLowerCase())) {
+      shorthand = href.trim().toLowerCase();
+    } else {
+      return;
+    }
+    const resolved = getResolvedUrl(shorthand);
+    if (resolved) {
+      a.href = resolved;
+    }
+  });
+}
+
+/**
+ * Single custom event for all xe-sites events. Host uses one listener; detail shape: { type, subType, data? }.
+ * - type 'system', subType 'loaded' | 'loading' | 'error'; 'error' has data: { message }
+ * - type 'navigation', subType 'url', data: { href, openInNewTab }
+ * - type 'analytics', subType 'track', data: { contentName?, contentId?, eventType?, subcategory?, subtype?, href? }
+ */
+export const XE_SITES_EVENT = 'xe-sites-event';
+
+/**
+ * Get the link or button element that was clicked (a[href] or sp-button with href).
+ * @param {Event} e - Click event
+ * @returns {{ el: Element, href: string }|null}
+ */
+function getClickedLinkOrButton(e) {
+  const { target } = e;
+  const link = target?.closest?.('a[href]');
+  if (link) return { el: link, href: link.href || link.getAttribute('href') || '' };
+  const btn = target?.closest?.('sp-button[href]') || target?.closest?.('sp-button');
+  if (btn) {
+    const href = btn.getAttribute?.('href') || btn.href || '';
+    if (href) return { el: btn, href };
+  }
+  return null;
+}
+
+/**
+ * Attach delegated click handler. Dispatches up to two events per click:
+ * - If element has data-content-id: analytics event (type 'analytics', subType 'track') first
+ * - Then navigation event (type 'navigation', subType 'url')
+ * @param {Element} container - Fragment container (e.g. #fragment-container) so clicks bubble here
+ */
+export function setupLinkClickHandler(container) {
+  if (!container?.addEventListener) return;
+  container.addEventListener('click', (e) => {
+    const result = getClickedLinkOrButton(e);
+    if (!result) return;
+    const { el, href } = result;
+    if (!href || href === '#') return;
+    e.preventDefault();
+    e.stopPropagation();
+    const openInNewTab = href.includes('#_blank');
+    const hasAnalytics = el.getAttribute?.('data-content-id');
+    if (hasAnalytics) {
+      const analyticsDetail = {
+        type: 'analytics',
+        subType: 'track',
+        data: {
+          eventType: 'click',
+          subtype: hasAnalytics,
+          href,
+        },
+      };
+      container.dispatchEvent(new CustomEvent(XE_SITES_EVENT, {
+        bubbles: true,
+        composed: true,
+        detail: analyticsDetail,
+      }));
+    }
+    const navigationDetail = {
+      type: 'navigation',
+      subType: 'url',
+      data: { href, openInNewTab },
+    };
+    container.dispatchEvent(new CustomEvent(XE_SITES_EVENT, {
+      bubbles: true,
+      composed: true,
+      detail: navigationDetail,
+    }));
+  }, true);
 }
 
 export function filterDuplicatedLinkBlocks(blocks) {
@@ -475,9 +415,8 @@ export function getBlockOptions(block, prefix) {
   return result;
 }
 
-function decorateSection(section, idx) {
-  let links = decorateLinks(section);
-  // decorateDefaults(section);
+async function decorateSection(section, idx) {
+  let links = await decorateLinks(section);
   const blocks = section.querySelectorAll(':scope > div[class]:not(.content)');
   blocks.forEach((el) => { if (!el.classList.contains('block')) el.classList.add('block'); });
 
@@ -487,7 +426,7 @@ function decorateSection(section, idx) {
     links.filter((link) => block.contains(link))
       .forEach((link) => {
         if (link.classList.contains('fragment')
-          && MILO_BLOCKS.includes(blockName) // do not inline consumer blocks (for now)
+          && LOCAL_BLOCKS.includes(blockName) // do not inline consumer blocks (for now)
           && !doNotInline.includes(blockName)) {
           if (!link.href.includes('#_inline')) {
             link.href = `${link.href}#_inline`;
@@ -515,54 +454,6 @@ function decorateSection(section, idx) {
   };
 }
 
-async function resolveInlineFrags(section) {
-  const inlineFrags = [...section.el.querySelectorAll('a[href*="#_inline"]')];
-  if (!inlineFrags.length) return;
-  const { default: loadInlineFrags } = await import('../blocks/fragment/fragment.js');
-  const fragPromises = inlineFrags.map((link) => loadInlineFrags(link));
-  await Promise.all(fragPromises);
-  const newlyDecoratedSection = decorateSection(section.el, section.idx);
-  section.blocks = newlyDecoratedSection.blocks;
-  section.preloadLinks = newlyDecoratedSection.preloadLinks;
-}
-
-
-const findReplaceableNodes = (area) => {
-  const regex = /{{(.*?)}}|%7B%7B(.*?)%7D%7D/g;
-  const walker = document.createTreeWalker(area, NodeFilter.SHOW_ALL);
-  const nodes = [];
-  let node = walker.nextNode();
-  while (node !== null) {
-    let matchFound = false;
-    if (node.nodeType === Node.TEXT_NODE) {
-      matchFound = regex.test(node.nodeValue);
-    } else if (node.nodeType === Node.ELEMENT_NODE && node.hasAttribute('href')) {
-      const hrefValue = node.getAttribute('href');
-      matchFound = regex.test(hrefValue);
-    }
-    if (matchFound) {
-      nodes.push(node);
-      regex.lastIndex = 0;
-    }
-    node = walker.nextNode();
-  }
-  return nodes;
-};
-
-
-
-let placeholderRequest;
-export async function decoratePlaceholders(area, config) {
-  if (!area) return;
-  const nodes = findReplaceableNodes(area);
-  if (!nodes.length) return;
-  area.dataset.hasPlaceholders = 'true';
-  const placeholderPath = `${config.locale?.contentRoot}/placeholders.json`;
-  placeholderRequest = placeholderRequest
-    || customFetch({ resource: placeholderPath, withCacheRules: true })
-      .catch(() => ({}));
-}
-
 export function loadLink(href, { as, callback, crossorigin, rel, fetchpriority } = {}) {
   let link = document.head.querySelector(`link[href="${href}"]`);
   if (!link) {
@@ -584,23 +475,138 @@ export function loadLink(href, { as, callback, crossorigin, rel, fetchpriority }
 }
 
 export function loadStyle(href, callback) {
-  if (window.app && window.app.BUILD_MODE === "builtin") {
+  if (window.app && window.app.BUILD_MODE === 'builtin') {
     return null;
   }
   return loadLink(href, { rel: 'stylesheet', callback });
 }
 
-async function decorateIcons(area, config) {
-  let icons = area.querySelectorAll('span.icon');
-  if (icons.length === 0) return;
-  const { base, iconsExcludeBlocks } = config;
-  if (iconsExcludeBlocks) {
-      const excludedIconsCount = [...icons].filter((icon) => iconsExcludeBlocks.some((block) => icon.closest(`div.${block}`))).length;
-      if (excludedIconsCount === icons.length) return;
+/** Parse icon-* class value into name and optional size
+ * (e.g. "chevron-right-s" -> { name: "chevron-right", size: "s" }). */
+export function parseIconClass(value) {
+  if (!value) return { name: '', size: undefined };
+  const sizes = ['xxl', 'xl', 'l', 'm', 's'];
+  for (const size of sizes) {
+    const suffix = `-${size}`;
+    if (value.endsWith(suffix)) {
+      return { name: value.slice(0, -suffix.length), size };
+    }
   }
-  loadStyle(`${base}/features/icons/icons.css`);
-  const { default: loadIcons } = await import('../features/icons/icons.js');
-  await loadIcons(icons, config);
+  return { name: value, size: undefined };
+}
+
+/** Spectrum icon size CSS variables (same as sp-icon). */
+const SPECTRUM_ICON_SIZE_VAR = {
+  s: 'var(--spectrum-workflow-icon-size-75)',
+  m: 'var(--spectrum-workflow-icon-size-100)',
+  l: 'var(--spectrum-workflow-icon-size-200)',
+  xl: 'var(--spectrum-workflow-icon-size-300)',
+  xxl: 'var(--spectrum-workflow-icon-size-xxl)',
+};
+
+function applyIconSizeToSvg(svg, size) {
+  if (!svg || !size || !SPECTRUM_ICON_SIZE_VAR[size]) return;
+  const sizeVar = SPECTRUM_ICON_SIZE_VAR[size];
+  svg.style.width = sizeVar;
+  svg.style.height = sizeVar;
+  svg.setAttribute('data-icon-size', size);
+}
+
+/** Cache for fetched content icons (iconName -> SVG element). */
+const contentIconCache = new Map();
+
+/**
+ * Fetch and parse an SVG from the given URL. Returns the SVG element or null.
+ * @param {string} url - Full URL to the SVG
+ * @param {string} iconName - Name used for cache key
+ * @returns {Promise<SVGElement|null>}
+ */
+async function fetchAndParseSVG(url, iconName) {
+  const res = await fetch(url);
+  if (!res.ok) return null;
+  const text = await res.text();
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(text, 'image/svg+xml');
+  const svg = doc.querySelector('svg');
+  if (!svg) return null;
+  svg.setAttribute('data-icon', iconName);
+  return document.adoptNode(svg);
+}
+
+/**
+ * Fetch an icon SVG from the current site's docs/library/icons (e.g. when not in Spectrum).
+ * Uses config base/contentRoot; path is {base}/docs/library/icons/{iconName}.svg.
+ * Results are cached by iconName. Callers receive a clone so the icon can be appended safely.
+ * @param {string} iconName - Icon name without extension (e.g. 'search', 'chevron-right')
+ * @returns {Promise<SVGElement|null>} A clone of the SVG element, or null if fetch/parse fails
+ */
+export async function fetchContentIcon(iconName) {
+  if (!iconName?.trim()) return null;
+  const key = iconName.trim();
+  if (contentIconCache.has(key)) return contentIconCache.get(key).cloneNode(true);
+  const config = getConfig();
+  const bases = [
+    (config.base || config.contentRoot || '').toString().replace(/\/$/, ''),
+    window.location.origin,
+  ].filter(Boolean);
+  for (const base of bases) {
+    const path = `${base}/docs/library/icons/${key}.svg`;
+    try {
+      const svgElement = await fetchAndParseSVG(path, key);
+      if (svgElement) {
+        contentIconCache.set(key, svgElement);
+        return svgElement.cloneNode(true);
+      }
+    } catch {
+      /* try next base */
+    }
+  }
+  return null;
+}
+
+async function decorateIcons(area, config) {
+  const icons = area.querySelectorAll('span.icon');
+  if (icons.length === 0) return;
+  const { iconsExcludeBlocks } = config;
+  if (iconsExcludeBlocks) {
+    const excludedIconsCount = [...icons].filter(
+      (icon) => iconsExcludeBlocks.some((block) => icon.closest(`div.${block}`)),
+    ).length;
+    if (excludedIconsCount === icons.length) return;
+  }
+  for (const span of icons) {
+    const iconClass = [...(span.classList || [])].find((c) => c.startsWith('icon-'))?.slice(5) ?? '';
+    const { name, size } = parseIconClass(iconClass);
+    if (!name) continue;
+    const svg = await fetchContentIcon(name);
+    if (svg) {
+      applyIconSizeToSvg(svg, size);
+      const label = span.getAttribute('aria-label');
+      if (label) svg.setAttribute('aria-label', label);
+      span.replaceWith(svg);
+    } else {
+      // console.warn(`Icon "${name}" not found in library.`);
+    }
+  }
+}
+
+/**
+ * Resolve an icon by name from docs/library/icons. Use in blocks (e.g. row-card).
+ * @param {string} name - Icon name without extension (e.g. 'search', 'chevron-down')
+ * @param {{ size?: string, label?: string }} [options] - Optional size (s|m|l|xl|xxl) and aria-label
+ * @returns {Promise<SVGElement|null>} The icon SVG or null
+ */
+export async function resolveIcon(name, options = {}) {
+  if (!name?.trim()) return null;
+  const n = name.trim();
+  const { size, label } = options;
+  const svg = await fetchContentIcon(n);
+  if (svg) {
+    applyIconSizeToSvg(svg, size);
+    if (label) svg.setAttribute('aria-label', label);
+    return svg;
+  }
+  return null;
 }
 
 /**
@@ -608,7 +614,7 @@ async function decorateIcons(area, config) {
  * @param {string} href URL to the CSS file
  */
 async function loadCSS(href) {
-  if (window.app && window.app.BUILD_MODE === "builtin") {
+  if (window.app && window.app.BUILD_MODE === 'builtin') {
     return Promise.resolve();
   }
 
@@ -634,7 +640,9 @@ export async function loadBlock(block) {
   const status = block.dataset.blockStatus;
   if (status !== 'loading' && status !== 'loaded') {
     block.dataset.blockStatus = 'loading';
-    const { blockName } = (!block.dataset || !block.dataset.blockName) ? { blockName: block.classList[0] } : block.dataset;
+    const { blockName } = (!block.dataset || !block.dataset.blockName)
+      ? { blockName: block.classList[0] }
+      : block.dataset;
     try {
       const cssLoaded = loadCSS(`${window.hlx.codeBasePath}/blocks/${blockName}/${blockName}.css`);
       const decorationComplete = new Promise((resolve) => {
@@ -663,6 +671,41 @@ export async function loadBlock(block) {
   return block;
 }
 
+/**
+ * Collect all .url-metadata elements under the given root(s), including inside shadow roots.
+ * @param {Element|DocumentFragment} root - Root to search
+ * @returns {Element[]}
+ */
+function collectUrlMetadataBlocks(root) {
+  const set = new Set();
+  function walk(r) {
+    if (!r?.querySelectorAll) return;
+    r.querySelectorAll('.url-metadata').forEach((el) => set.add(el));
+    r.querySelectorAll('*').forEach((el) => {
+      if (el.shadowRoot) walk(el.shadowRoot);
+    });
+  }
+  walk(root);
+  return [...set];
+}
+
+/**
+ * Ensure url-metadata blocks are loaded so urlMetadataMap is populated before resolving links.
+ * Searches document.body and, when area is not document, the area's tree (including shadow roots).
+ * Export for callers (e.g. web components) that render content without calling loadArea.
+ * @param {Document|Element} [area=document] - Area that will contain links to resolve
+ * @returns {Promise<void>}
+ */
+export async function ensureUrlMetadataLoaded(area = document) {
+  const roots = area === document ? [document.body] : [document.body, area];
+  const blocks = roots.flatMap((r) => collectUrlMetadataBlocks(r));
+  const unique = [...new Set(blocks)];
+  await Promise.all(unique.map((b) => {
+    b.dataset.blockName = 'url-metadata';
+    return loadBlock(b);
+  }));
+}
+
 export function partition(arr, fn) {
   return arr.reduce(
     (acc, val, i, ar) => {
@@ -673,11 +716,8 @@ export function partition(arr, fn) {
   );
 }
 
-
-async function processSection(section, config, isDoc) {
-  await resolveInlineFrags(section);
+async function processSection(section, config) {
   await Promise.all([
-    decoratePlaceholders(section.el, config),
     decorateIcons(section.el, config),
   ]);
   const loadBlocks = [];
@@ -697,23 +737,43 @@ async function processSection(section, config, isDoc) {
   return section.blocks;
 }
 
-function decorateSections(el, isDoc) {
+async function decorateSections(el, isDoc) {
   const selector = isDoc ? 'body > main > div' : ':scope > div';
-  return [...el.querySelectorAll(selector)].map(decorateSection);
+  const sectionElements = [...el.querySelectorAll(selector)];
+  return Promise.all(sectionElements.map((section, idx) => decorateSection(section, idx)));
+}
+
+/**
+ * Scroll the first element with id matching the hash into view.
+ * @param {string} hash - e.g. "#section-id"
+ * @param {Document|Element} [scope=document] - Root to search in (document for full page, or container for fragment)
+ */
+export function scrollToHashedElement(hash, scope = document) {
+  const id = hash?.replace(/^#/, '').trim();
+  if (!id) return;
+  const el = scope === document
+    ? document.getElementById(id)
+    : scope.querySelector(`#${CSS.escape(id)}`);
+  if (el) el.scrollIntoView({ behavior: 'instant', block: 'start' });
 }
 
 export async function loadArea(area = document) {
   const isDoc = area === document;
   const config = getConfig();
-  const sections = decorateSections(area, isDoc);
+  const sections = await decorateSections(area, isDoc);
 
   // Apply page-metadata first so body classes/styles are set before other blocks
   const pageMetaBlocks = sections.flatMap((s) => s.blocks).filter((b) => b.classList?.[0] === 'page-metadata');
   await Promise.all(pageMetaBlocks.map((b) => loadBlock(b)));
 
+  // Load url-metadata so shorthand→URL map is ready before resolving link hrefs.
+  // ensureUrlMetadataLoaded finds .url-metadata in document.body and in area (including shadow roots).
+  await ensureUrlMetadataLoaded(area);
+  resolveLinkHrefs(area === document ? document.body : area);
+
   const areaBlocks = [];
   for (const section of sections) {
-    const sectionBlocks = await processSection(section, config, isDoc);
+    const sectionBlocks = await processSection(section, config);
     areaBlocks.push(...sectionBlocks);
 
     areaBlocks.forEach((block) => {
@@ -721,10 +781,25 @@ export async function loadArea(area = document) {
     });
   }
 
-  // const currentHash = window.location.hash;
-  // if (currentHash) {
-  //   scrollToHashedElement(currentHash);
-  // }
+  const currentHash = window.location.hash;
+  if (currentHash) {
+    scrollToHashedElement(currentHash, area === document ? document : area);
+  }
+}
+
+/**
+ * Normalize a link href for comparison (same-origin → pathname + search + hash, else full href).
+ * @param {string} href - Link href
+ * @returns {string}
+ */
+export function localizeLink(href) {
+  if (!href || typeof href !== 'string') return '';
+  try {
+    const u = new URL(href, window.location.origin);
+    return u.origin === window.location.origin ? u.pathname + u.search + u.hash : u.href;
+  } catch {
+    return href;
+  }
 }
 
 export function createTag(tag, attributes, html, options = {}) {
@@ -749,102 +824,108 @@ export function createTag(tag, attributes, html, options = {}) {
   return el;
 }
 
-function getExtension(path) {
-  const pageName = path.split('/').pop();
-  return pageName.includes('.') ? pageName.split('.').pop() : '';
+const RETRY_STATUSES = [425, 503];
+const RETRY_DELAY_MS = 1500;
+const RETRY_MAX_ATTEMPTS = 3;
+
+/**
+ * Fetch a URL with retries on 425 Too Early / 503 Service Unavailable.
+ * @param {string} url - Absolute URL to fetch
+ * @param {{ resolveUrl?: (url: string) => string; maxAttempts?: number;
+ * retryStatuses?: number[]; delayMs?: number }} [opts]
+ * @returns {Promise<Response>}
+ */
+export async function fetchWithRetry(url, opts = {}) {
+  const {
+    resolveUrl,
+    maxAttempts = RETRY_MAX_ATTEMPTS,
+    retryStatuses = RETRY_STATUSES,
+    delayMs = RETRY_DELAY_MS,
+  } = opts;
+  const fetchUrl = resolveUrl ? resolveUrl(url) : url;
+  let lastResponse;
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    const response = await fetch(fetchUrl, { cache: 'default' });
+    lastResponse = response;
+    if (response.ok || !retryStatuses.includes(response.status)) return response;
+    if (attempt < maxAttempts - 1) await new Promise((r) => { setTimeout(r, delayMs); });
+  }
+  return lastResponse;
 }
 
-export function localizeLink(
-  href,
-  originHostName = window.location.hostname,
-  overrideDomain = false,
-) {
+/**
+ * Fetch a media URL (image, etc.) with retry on 425/503 and return a blob URL for use in img src.
+ * Caller should revoke the blob URL when no longer needed to avoid leaks.
+ * @param {string} url - Absolute URL (e.g. image)
+ * @param {{ resolveUrl?: (url: string) => string }} [opts]
+ * @returns {Promise<string>} Resolves to blob URL, or original url on non-ok response after retries
+ */
+export async function fetchMediaAsBlobUrl(url, opts = {}) {
   try {
-    const url = new URL(href);
-    const relative = url.hostname === originHostName;
-    const processedHref = relative ? href.replace(url.origin, '') : href;
-    const { hash } = url;
-    // don't localize links with #_dnt
-    if (hash.includes('#_dnt')) return processedHref.replace('#_dnt', '');
-    const path = url.pathname;
-    const extension = getExtension(path);
-    const allowedExts = ['', 'html', 'json'];
-    if (!allowedExts.includes(extension)) return processedHref;
-    const { locale, locales, prodDomains } = getConfig();
-    if (!locale || !locales) return processedHref;
-    const isLocalizable = relative || (prodDomains && prodDomains.includes(url.hostname))
-      || overrideDomain;
-    if (!isLocalizable) return processedHref;
-    const isLocalizedLink = path.startsWith(`/${LANGSTORE}`)
-      || path.startsWith(`/${PREVIEW}`)
-      || Object.keys(locales).some((loc) => loc !== '' && (path.startsWith(`/${loc}/`)
-        || path.endsWith(`/${loc}`)));
-    if (isLocalizedLink) return processedHref;
-    const urlPath = `${locale.prefix}${path}${url.search}${hash}`;
-    return relative ? urlPath : `${url.origin}${urlPath}`;
-  } catch (error) {
-    return href;
+    const response = await fetchWithRetry(url, opts);
+    if (!response.ok) return url;
+    const blob = await response.blob();
+    return URL.createObjectURL(blob);
+  } catch {
+    return url;
   }
 }
 
-export async function customFetch({ resource, withCacheRules }) {
+/**
+ * @param {Object} opts
+ * @param {string} opts.resource - Fragment URL (relative or absolute)
+ * @param {boolean} [opts.withCacheRules]
+ * @param {(url: string) => string} [opts.resolveUrl] - Optional; return the URL to actually fetch (e.g. CORS proxy).
+ * Rewriting still uses resource as base.
+ */
+export async function customFetch({ resource, withCacheRules, resolveUrl }) {
   const options = {};
   if (withCacheRules) {
     const params = new URLSearchParams(window.location.search);
     options.cache = params.get('cache') === 'off' ? 'reload' : 'default';
   }
 
-  const baseUrl = new URL(resource);
+  const baseUrl = /^https?:\/\//i.test(resource)
+    ? new URL(resource)
+    : new URL(resource, window.location.origin);
   // HACK: Adding a forced cache bust to avoid cache issues
   baseUrl.searchParams.set('cb', new Date().getTime());
-  const response = await fetch(baseUrl.toString(), options);
+  const fetchUrl = typeof resolveUrl === 'function' ? resolveUrl(baseUrl.toString()) : baseUrl.toString();
+  const response = await fetch(fetchUrl, options);
   if (!resource.endsWith('.plain.html')) {
     return response;
   }
 
   const html = await response.text();
+  const escapeForHtmlAttr = (url) => String(url).replace(/&/g, '&amp;');
+  const decodePath = (p) => String(p).replace(/&amp;/gi, '&').replace(/&#x26;/gi, '&').replace(/&#38;/gi, '&');
   const processedHtml = html.replace(
-    /(href|src|srcset)="(\.\/[^"\s]*|\.\.\/[^"\s]*|[^"\/][^"\s]*)"/g,
+    /(href|src|srcset)="(\.\/[^"\s]*|\.\.\/[^"\s]*|[^"/][^"\s]*)"/g,
     (match, attr, path) => {
-      if (path.startsWith('http') || path.startsWith('//') || path.startsWith('data:')) {
+      const raw = decodePath(path);
+      if (raw.startsWith('http') || raw.startsWith('//') || raw.startsWith('data:')) {
         return match;
       }
       if (attr === 'srcset') {
-        return `srcset="${path
+        const value = raw
           .split(',')
           .map((url) => {
             const [urlPart, size] = url.trim().split(' ');
-            if (urlPart.startsWith('http') || urlPart.startsWith('//') || urlPart.startsWith('data:')) {
-              return url;
+            const decoded = decodePath(urlPart);
+            if (decoded.startsWith('http') || decoded.startsWith('//') || decoded.startsWith('data:')) {
+              return url.trim();
             }
-            return `${new URL(urlPart, baseUrl).href}${size ? ` ${size}` : ''}`;
+            return `${new URL(decoded, baseUrl).href}${size ? ` ${size}` : ''}`;
           })
-          .join(', ')}"`;
+          .join(', ');
+        return `srcset="${escapeForHtmlAttr(value)}"`;
       }
-      return `${attr}="${new URL(path, baseUrl).href}"`;
-    }
+      return `${attr}="${escapeForHtmlAttr(new URL(raw, baseUrl).href)}"`;
+    },
   );
   return new Response(processedHtml, {
-    headers: {
-      'Content-Type': 'text/html',
-    },
+    status: response.status,
+    statusText: response.statusText,
+    headers: { 'Content-Type': 'text/html' },
   });
 }
-
-export function createIntersectionObserver({ el, callback, once = true, options = {} }) {
-  const io = new IntersectionObserver((entries, observer) => {
-    entries.forEach(async (entry) => {
-      if (entry.isIntersecting) {
-        if (once) observer.unobserve(entry.target);
-        callback(entry.target, entry);
-      }
-    });
-  }, options);
-  io.observe(el);
-  return io;
-}
-
-export function isInTextNode(node) {
-  return (node.parentElement.childNodes.length > 1 && node.parentElement.firstChild.tagName === 'A') || node.parentElement.firstChild.nodeType === Node.TEXT_NODE;
-}
-
