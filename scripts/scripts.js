@@ -105,11 +105,19 @@ async function redirectToBoost() {
   } catch (_) {
     // use defaults
   }
-
+  const layout = preview.layout || '';
   const base = getBoostAppBase(preview);
+
+  // CCD: open aam:// URI directly (same as opening stage.adobe.com). Browser prompts "Open with Creative Cloud?".
+  if (preview.targetApp === 'ccd') {
+    const routePath = `/boost${layout ? `&layout=${layout}` : ''}&url=${plainUrl}`;
+    const aamDeeplink = `aam://adobecreativecloud/?workflow=routeToPath&routePath=${encodeURIComponent(routePath)}`;
+    window.location.replace(aamDeeplink);
+    return;
+  }
+
   const boostPath = '/boost';
-  const layout = (preview.layout || '');
-  const boostUrl = `${base}${boostPath}?url=${plainUrl}${layout ? `&layout=${encodeURIComponent(layout)}` : ''}`;
+  const boostUrl = `${base}${boostPath}?url=${plainUrl}${layout ? `&layout=${layout}` : ''}`;
   window.location.replace(boostUrl);
 }
 
