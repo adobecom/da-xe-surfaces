@@ -10,21 +10,27 @@
  * governing permissions and limitations under the License.
  */
 
-
-
 /** Fallback Boost app base when preview-metadata has no targetApp or environment. */
 const DEFAULT_BOOST_APP_BASE = 'https://dev.hollywoodstudios.corp.adobe.com:9000';
+
+const cchUrlForEnv = (env) => {
+  if (env === 'dev' || env === 'local') return 'https://dev.hollywoodstudios.corp.adobe.com:9000';
+  if (env.includes('dev')) return `https://${env}-nest.creativecloud.adobe.com`;
+  if (env === 'stage') return 'https://stage.adobe.com';
+  if (env === 'prod') return 'https://adobe.com';
+  return DEFAULT_BOOST_APP_BASE;
+};
 
 /**
  * Resolve Boost app base URL from preview-metadata.
  * Uses targetApp only when it is a full URL (e.g. https://...); otherwise uses environment or default.
  */
-function getBoostAppBase(preview) {
+function getBoostAppBaseForCCH(preview) {
   const raw = (preview?.targetApp || '').trim();
   if (raw && (raw.startsWith('http://') || raw.startsWith('https://'))) {
     return raw.replace(/\/$/, '');
   }
-  if (preview?.environment === 'dev') return 'https://dev.hollywoodstudios.corp.adobe.com:9000';
+  if (preview?.environment) return cchUrlForEnv(preview.environment);
   return DEFAULT_BOOST_APP_BASE;
 }
 
@@ -51,24 +57,27 @@ function getCurrentPlainHtmlUrl() {
 function parsePreviewMetadataParams(block) {
   const data = { layout: '', environment: '', targetApp: '' };
   if (!block?.children?.length) return data;
-  for (const row of block.children) {
+  const rows = [...block.children];
+  const paramsRow = rows.find((row) => {
     const cells = [...row.children];
-    if (cells.length < 2) continue;
+    if (cells.length < 2) return false;
     const key = (cells[0].textContent || '').trim().toLowerCase();
     const value = (cells[1].textContent || '').trim();
-    if (key !== 'params' || !value) continue;
-    value.split(/\s*\|\s*/).forEach((part) => {
-      const colon = part.indexOf(':');
-      if (colon === -1) return;
-      const k = part.slice(0, colon).trim().toLowerCase().replace(/\s+/g, '');
-      const v = part.slice(colon + 1).trim();
-      if (!v) return;
-      if (k === 'layout') data.layout = v;
-      else if (k === 'environment') data.environment = v;
-      else if (k === 'targetapp') data.targetApp = v;
-    });
-    break;
-  }
+    return key === 'params' && Boolean(value);
+  });
+  if (!paramsRow) return data;
+  const cells = [...paramsRow.children];
+  const value = (cells[1].textContent || '').trim();
+  value.split(/\s*\|\s*/).forEach((part) => {
+    const colon = part.indexOf(':');
+    if (colon === -1) return;
+    const k = part.slice(0, colon).trim().toLowerCase().replace(/\s+/g, '');
+    const v = part.slice(colon + 1).trim();
+    if (!v) return;
+    if (k === 'layout') data.layout = v;
+    else if (k === 'environment') data.environment = v;
+    else if (k === 'targetapp') data.targetApp = v;
+  });
   return data;
 }
 
@@ -106,7 +115,6 @@ async function redirectToBoost() {
     // use defaults
   }
   const layout = preview.layout || '';
-  const base = getBoostAppBase(preview);
 
   // CCD: open aam:// URI directly (same as opening stage.adobe.com). Browser prompts "Open with Creative Cloud?".
   if (preview.targetApp === 'ccd') {
@@ -116,11 +124,12 @@ async function redirectToBoost() {
     return;
   }
 
+  // For CCH, redirect to the CCH app base URL
+  const base = getBoostAppBaseForCCH(preview);
   const boostPath = '/boost';
   const boostUrl = `${base}${boostPath}?url=${plainUrl}${layout ? `&layout=${layout}` : ''}`;
   window.location.replace(boostUrl);
 }
 
-
-// Redirect to Boost app using preview-block (layout, environment, targetApp); Milo blocks are not loaded.
+// Redirect to Boost app using preview-block; Milo blocks are not loaded.
 (async () => { await redirectToBoost(); })();
