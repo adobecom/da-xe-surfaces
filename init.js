@@ -40,23 +40,10 @@ window.xeBlockRegistry = {
   'row-card': rowCardDecorate,
   text: textDecorate,
   'url-metadata': urlMetadataDecorate,
-  'adobe-tv': adobetvDecorate,
+  adobetv: adobetvDecorate, // fragment class can be adobetv (no hyphen)
 };
 
 export const XE_SITES_TAG = 'xe-sites';
-
-/**
- * Resolves theme (light | dark) from URL, defaulting to light. Matches scripts.js behavior.
- */
-function getThemeFromUrl() {
-  const params = new URLSearchParams(window.location.search);
-  const fromQuery = params.get('theme')?.toLowerCase();
-  if (fromQuery === 'dark' || fromQuery === 'light') return fromQuery;
-  const hash = window.location.hash.slice(1);
-  const fromHash = new URLSearchParams(hash).get('theme')?.toLowerCase();
-  if (fromHash === 'dark' || fromHash === 'light') return fromHash;
-  return 'light';
-}
 
 function getConfigForPath(pathname) {
   return {
@@ -109,12 +96,6 @@ export default class XeSites extends LitElement {
     if (changedProperties.has('path') && this.hasUpdated) {
       this.loadFragment(this.path);
     }
-    const themeOrScaleChanged = changedProperties.has('theme')
-      || changedProperties.has('scale')
-      || changedProperties.has('themeSystem');
-    if (themeOrScaleChanged && this.hasUpdated) {
-      this.syncThemeAttrs();
-    }
   }
 
   /**
@@ -122,34 +103,15 @@ export default class XeSites extends LitElement {
    * When themeSystem is 'spectrum-two', uses S2 fragment names (aligns with React Spectrum S2).
    */
   getThemeAttrs() {
-    const system = (this.themeSystem && this.themeSystem.trim()) || 'spectrum';
-    const lightDark = (this.theme && this.theme.trim()) || getThemeFromUrl();
+    const system = 'spectrum-two';
+    const raw = this.theme && this.theme.trim();
     const scaleInput = (this.scale && this.scale.trim()) || 'medium';
-    if (system === 'spectrum-two') {
-      return {
-        system: 'spectrum-two',
-        color: lightDark === 'dark' ? 'dark-spectrum-two' : 'light-spectrum-two',
-        scale: scaleInput === 'large'
-          ? 'large-spectrum-two'
-          : 'medium-spectrum-two',
-      };
-    }
+
     return {
-      system: 'spectrum',
-      color: lightDark,
+      system,
+      color: raw,
       scale: scaleInput,
     };
-  }
-
-  /** Apply current theme/scale/system to the sp-theme inside the fragment container. */
-  syncThemeAttrs() {
-    const container = this.querySelector('#fragment-container');
-    const themeEl = container?.querySelector('sp-theme');
-    if (!themeEl) return;
-    const { system, color, scale } = this.getThemeAttrs();
-    themeEl.setAttribute('system', system);
-    themeEl.setAttribute('color', color);
-    themeEl.setAttribute('scale', scale);
   }
 
   async loadFragment(url) {
@@ -209,23 +171,31 @@ export default class XeSites extends LitElement {
       const fragmentDoc = parser.parseFromString(responseHtml, 'text/html');
 
       const main = document.createElement('main');
-      main.innerHTML = fragmentDoc.body.innerHTML;
+      // Use inner main's content so loadArea's :scope > div finds section divs.
+      const fragmentMain = fragmentDoc.body.querySelector('main');
+      main.innerHTML = fragmentMain ? fragmentMain.innerHTML : fragmentDoc.body.innerHTML;
 
       this.clearFragmentContent();
 
+      const fragmentContainer = this.querySelector('#fragment-container');
       const themeEl = document.createElement('sp-theme');
       const { system, color, scale } = this.getThemeAttrs();
       themeEl.setAttribute('system', system);
       themeEl.setAttribute('color', color);
       themeEl.setAttribute('scale', scale);
       themeEl.appendChild(main);
+      fragmentContainer.appendChild(themeEl);
 
-      this.querySelector('#fragment-container').appendChild(themeEl);
+      // Force theme to resolve with correct system/color/scale before blocks run.
+      // sp-theme's first adoptStyles() can run with default (spectrum/light) before attrs are set;
+      // re-adopt so tokens (e.g. button content color) resolve from spectrum-two + requested color.
+      await themeEl.updateComplete;
+      themeEl.requestUpdate();
+      await themeEl.updateComplete;
 
       await loadArea(main);
       if (loadId !== this.fragmentRequestId) return;
 
-      const fragmentContainer = this.querySelector('#fragment-container');
       if (fragmentContainer) setupLinkClickHandler(fragmentContainer);
 
       main.querySelectorAll('img[src], picture source[srcset]').forEach((el) => {

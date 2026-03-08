@@ -18,15 +18,8 @@ sp-theme {
   min-height: 100vh;
   box-sizing: border-box;
   padding: 0; /* no default padding; page-metadata "padding" adds spacing classes when needed */
-  background-color: var(--spectrum-background-color-default, var(--spectrum-gray-50, #fff));
-  color: var(--spectrum-content-color-default, var(--spectrum-gray-900, #2d2d2d));
-}
-
-/* When embedded (e.g. Boost dialog): use host surface so padding and content share one background (transparent = show wrapper). */
-xe-sites sp-theme {
-  min-height: 0;
-  height: 100%;
-  background-color: var(--xe-sites-surface, var(--s2-container-bg, var(--spectrum-background-color-default, var(--spectrum-gray-50, #fff))));
+  /* background-color: var(--spectrum-background-color-default, var(--spectrum-gray-50, #fff));
+  color: var(--spectrum-content-color-default, var(--spectrum-gray-900, #2d2d2d)); */
 }
 
 /* sp-theme spacing from page-metadata "padding" – padding on theme so inset content gets theme background */
@@ -65,6 +58,21 @@ sp-theme.xxl-spacing-bottom { padding-bottom: var(--spectrum-spacing-700, 48px);
 sp-theme.xxxl-spacing-bottom { padding-bottom: var(--spectrum-spacing-800, 56px); }
 sp-theme.ivxl-spacing-bottom { padding-bottom: var(--spectrum-spacing-900, 64px); }
 sp-theme.vxl-spacing-bottom { padding-bottom: var(--spectrum-spacing-1000, 80px); }
+
+/*
+ * Root cause: @spectrum-web-components/theme spectrum-two theme-core-tokens sets
+ * --system-spectrum-button-primary-content-color-* to var(--spectrum-white) for primary
+ * buttons. So primary CTA text is white by design. In the fragment (e.g. Boost dialog)
+ * we use dark theme but row-cards use a light surface; primary CTAs there need dark text.
+ * Fix: set the design token for this context so the fragment subtree uses the correct
+ * primary button content color (no change to variant or component code).
+ */
+xe-sites #fragment-container sp-theme {
+  --system-spectrum-button-primary-content-color-default: var(--spectrum-gray-900, #181818);
+  --system-spectrum-button-primary-content-color-hover: var(--spectrum-gray-900, #181818);
+  --system-spectrum-button-primary-content-color-down: var(--spectrum-gray-900, #181818);
+  --system-spectrum-button-primary-content-color-key-focus: var(--spectrum-gray-900, #181818);
+}
 
 /* block spacing */
 .block.no-spacing { padding: 0; }

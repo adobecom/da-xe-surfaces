@@ -634,6 +634,8 @@ async function loadCSS(href) {
 
 /**
  * Loads JS and CSS for a block.
+ * When BUILD_MODE is 'builtin', uses window.xeBlockRegistry (set by init.js) so block logic
+ * runs when the package is bundled by a host (e.g. nest) without relying on dynamic import.
  * @param {Element} block The block element
  */
 export async function loadBlock(block) {
@@ -644,24 +646,37 @@ export async function loadBlock(block) {
       ? { blockName: block.classList[0] }
       : block.dataset;
     try {
-      const cssLoaded = loadCSS(`${window.hlx.codeBasePath}/blocks/${blockName}/${blockName}.css`);
-      const decorationComplete = new Promise((resolve) => {
-        (async () => {
-          try {
-            const mod = await import(
-              `../blocks/${blockName}/${blockName}.js`
-            );
-            if (mod.default) {
-              await mod.default(block);
+      const builtin = window.app?.BUILD_MODE === 'builtin' && window.xeBlockRegistry?.[blockName];
+      if (builtin) {
+        await Promise.all([
+          loadCSS(`${window.hlx?.codeBasePath || ''}/blocks/${blockName}/${blockName}.css`),
+          (async () => {
+            const decorate = window.xeBlockRegistry[blockName];
+            if (typeof decorate === 'function') {
+              await decorate(block);
             }
-          } catch (error) {
-            // eslint-disable-next-line no-console
-            console.log(`failed to load module for ${blockName}`, error);
-          }
-          resolve();
-        })();
-      });
-      await Promise.all([cssLoaded, decorationComplete]);
+          })(),
+        ]);
+      } else {
+        const cssLoaded = loadCSS(`${window.hlx.codeBasePath}/blocks/${blockName}/${blockName}.css`);
+        const decorationComplete = new Promise((resolve) => {
+          (async () => {
+            try {
+              const mod = await import(
+                `../blocks/${blockName}/${blockName}.js`
+              );
+              if (mod.default) {
+                await mod.default(block);
+              }
+            } catch (error) {
+              // eslint-disable-next-line no-console
+              console.log(`failed to load module for ${blockName}`, error);
+            }
+            resolve();
+          })();
+        });
+        await Promise.all([cssLoaded, decorationComplete]);
+      }
     } catch (error) {
       // eslint-disable-next-line no-console
       console.log(`failed to load block ${blockName}`, error);
