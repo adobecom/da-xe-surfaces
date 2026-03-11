@@ -16,15 +16,34 @@ module.exports = {
     rules: [
       {
         test: /\.css$/,
+        include: [path.resolve(__dirname, 'blocks'), path.resolve(__dirname, 'styles')],
+        use: [
+          'style-loader',
+          'css-loader',
+          'postcss-loader',
+          { loader: path.resolve(__dirname, 'scripts/xe-replace-loader.js') },
+        ],
+      },
+      {
+        test: /\.css$/,
+        exclude: [path.resolve(__dirname, 'blocks'), path.resolve(__dirname, 'styles')],
         use: ['style-loader', 'css-loader', 'postcss-loader'],
       },
       {
         test: /\.js$/,
         exclude: /node_modules/,
+        include: [path.resolve(__dirname, 'blocks'), path.resolve(__dirname, 'utils'), path.resolve(__dirname, 'scripts')],
+        use: [
+          { loader: path.resolve(__dirname, 'scripts/xe-replace-loader.js') },
+          { loader: 'swc-loader' },
+        ],
+      },
+      {
+        test: /\.js$/,
+        exclude: [/node_modules/, path.resolve(__dirname, 'blocks'), path.resolve(__dirname, 'utils'), path.resolve(__dirname, 'scripts')],
         use: { loader: 'swc-loader' },
       },
     ],
   },
-  resolve:
-  { extensions: ['.js'] },
+  resolve: { extensions: ['.js'] },
 };

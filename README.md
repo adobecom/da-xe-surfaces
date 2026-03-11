@@ -37,9 +37,26 @@ The bundle includes Spectrum Web Components (sp-theme, sp-button), block logic, 
 
 ## Developing
 
-1. Install the [Helix CLI](https://github.com/adobe/helix-cli): `sudo npm install -g @adobe/aem-cli`
-2. Run `aem up` in this repo's folder. (Opens browser at `http://localhost:3000`)
-3. Run `npm run build` to rebuild `dist/da-xe-surfaces.js` after changes.
+1. **Install dependencies:**
+   ```sh
+   npm install
+   ```
+
+2. **Build the bundle:**
+   ```sh
+   npm run build
+   ```
+   Produces `dist/da-xe-surfaces.js`. `prebuild` runs automatically first (generates xe-components from `package.json`). To override mappings, create `xe-components.config.cjs` (see [xe-components config](#xe-components-config)).
+
+3. **Start the local server:**
+   ```sh
+   aem up
+   ```
+   Requires the [Helix CLI](https://github.com/adobe/helix-cli): `sudo npm install -g @adobe/aem-cli`. Opens browser at `http://localhost:3000`.
+
+After making changes, run `npm run build` again to rebuild.
+
+**When package.json or xe-components.config.cjs changes** (e.g. adding `@spectrum-web-components/*`), any dev pulling the update must run `npm install` and `npm run build` to regenerate xe-components.
 
 ## Building
 
@@ -48,6 +65,21 @@ npm run build
 ```
 
 Produces `dist/da-xe-surfaces.js` (and source map). Entry: `bundle-entry.js` → `init.js` + `scripts/scripts.js`.
+
+### xe-components config
+
+xe-components are **auto-detected** from `package.json`: any `@spectrum-web-components/*` dependency becomes an `xe-*` wrapper (e.g. `@spectrum-web-components/button` → `xe-button`). No config file needed.
+
+To override or customize, create `xe-components.config.cjs`:
+
+```js
+module.exports = {
+  'sp-theme': { package: '@spectrum-web-components/theme', export: 'Theme' },
+  'sp-button': { package: '@spectrum-web-components/button', export: 'Button' },
+};
+```
+
+Set `autoDetect: true` to ignore manual entries and use package.json only.
 
 ## Testing
 

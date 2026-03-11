@@ -1,6 +1,7 @@
 .hlx/*
 coverage/*
 logs/*
+xe-components.tags.cjs
 node_modules/*
 .DS_Store
 .idea

@@ -1,15 +1,14 @@
 import { LitElement, html } from 'lit';
 import { loadArea, setConfig, customFetch, setupLinkClickHandler, XE_SITES_EVENT } from './utils/utils.js';
 
-// SWC 0.47.2 — matches nest (adobe-home-web)
-import '@spectrum-web-components/theme/sp-theme.js';
+// xe-* components: isolated from host sp-* (auto-generated from xe-components.config.cjs)
+import './xe-components.js';
 import '@spectrum-web-components/theme/core.js';
 import '@spectrum-web-components/theme/scale-medium.js';
 import '@spectrum-web-components/theme/theme-light.js';
 import '@spectrum-web-components/theme/theme-dark.js';
 // Spectrum Two (S2) — use theme-system="spectrum-two" to align with React Spectrum S2
 import '@spectrum-web-components/theme/src/spectrum-two/themes-core-tokens.js';
-import '@spectrum-web-components/button/sp-button.js';
 
 // Static block JS imports (webpack can't dynamically resolve via file: symlink)
 import pageMetadataDecorate from './blocks/page-metadata/page-metadata.js';
@@ -49,18 +48,12 @@ function getConfigForPath(pathname) {
 
 export default class XeSites extends LitElement {
   static properties = {
+    /** Fragment URL: relative or absolute. */
     path: { type: String },
-    loadError: { type: String },
-    /** Theme for sp-theme: 'light' | 'dark'. Overrides URL when set (e.g. Boost). */
+    /** Theme for xe-theme: 'light' | 'dark'. Overrides URL when set (e.g. Boost). */
     theme: { type: String, reflect: true },
-    /** Scale for sp-theme: 'medium' | 'large'. Default 'medium'. */
+    /** Scale for xe-theme: 'medium' | 'large'. Default 'medium'. */
     scale: { type: String, reflect: true },
-    /** Theme system: 'spectrum' (classic) or 'spectrum-two' (S2). Default 'spectrum'. */
-    themeSystem: { type: String, reflect: true },
-    /** Environment for URL resolution: 'stage' | 'prod'. Passed from host (e.g. Boost). */
-    environment: { type: String, reflect: true },
-    /** Host app type for URL slot: 'cch' | 'ccd'. Passed from host (e.g. Boost). */
-    host: { type: String, reflect: true },
   };
 
   /** Light DOM: block CSS in document.head; postcss-prefixwrap scopes to xe-sites. */
@@ -92,7 +85,7 @@ export default class XeSites extends LitElement {
   }
 
   /**
-   * Resolve sp-theme system, color, and scale from xe-sites props.
+   * Resolve xe-theme system, color, and scale from xe-sites props.
    * When themeSystem is 'spectrum-two', uses S2 fragment names (aligns with React Spectrum S2).
    */
   getThemeAttrs() {
@@ -171,7 +164,7 @@ export default class XeSites extends LitElement {
       this.clearFragmentContent();
 
       const fragmentContainer = this.querySelector('#fragment-container');
-      const themeEl = document.createElement('sp-theme');
+      const themeEl = document.createElement('xe-theme');
       const { system, color, scale } = this.getThemeAttrs();
       themeEl.setAttribute('system', system);
       themeEl.setAttribute('color', color);
@@ -180,7 +173,7 @@ export default class XeSites extends LitElement {
       fragmentContainer.appendChild(themeEl);
 
       // Force theme to resolve with correct system/color/scale before blocks run.
-      // sp-theme's first adoptStyles() can run with default (spectrum/light) before attrs are set;
+      // xe-theme's first adoptStyles() can run with default (spectrum/light) before attrs are set;
       // re-adopt so tokens (e.g. button content color) resolve from spectrum-two + requested color.
       await themeEl.updateComplete;
       themeEl.requestUpdate();
@@ -232,10 +225,7 @@ export default class XeSites extends LitElement {
     }
     /* xe-sites-reset blocks Nest inheritance; block CSS (xe-sites .block) still applies */
     return html`
-    <style>
-     .xe-sites-reset{color: initial;}
-    </style>
-      <div class="xe-sites-reset"><div id="fragment-container" style="display: block; height: 100%; min-height: 0;"></div></div>
+      <div id="fragment-container" style="display: block; height: 100%; min-height: 0;"></div>
     `;
   }
 }

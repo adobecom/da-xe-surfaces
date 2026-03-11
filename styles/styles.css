@@ -18,13 +18,6 @@ sp-theme {
   min-height: 100vh;
   box-sizing: border-box;
   padding: 0; /* no default padding; page-metadata "padding" adds spacing classes when needed */
-
-  /* Primary button content color in 0.47.2.0  version was set to var(--spectrum-white) and due to that contrast was not good enough for primary button in dark theme. */
-  --system-spectrum-button-primary-content-color-default: var(--spectrum-gray-25, #111);
-  --system-spectrum-button-primary-content-color-hover: var(--spectrum-gray-25, #111);
-  --system-spectrum-button-primary-content-color-down: var(--spectrum-gray-25, #111);
-  --system-spectrum-button-primary-content-color-focus: var(--spectrum-gray-25, #111);
-
 }
 
 /* sp-theme spacing from page-metadata "padding" – padding on theme so inset content gets theme background */

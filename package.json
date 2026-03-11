@@ -11,6 +11,8 @@
     "lint": "npm run lint:js && npm run lint:css",
     "lint:js": "eslint .",
     "lint:css": "stylelint 'blocks/**/*.css' 'styles/*.css'",
+    "generate:xe-components": "node scripts/generate-xe-components.js",
+    "prebuild": "npm run generate:xe-components",
     "build": "webpack --mode production"
   },
   "repository": {
@@ -53,7 +55,7 @@
   },
   "dependencies": {
     "lit": "^2.7.3",
-    "@spectrum-web-components/button": "0.47.2",
-    "@spectrum-web-components/theme": "0.47.2"
+    "@spectrum-web-components/button": "^1.11.2",
+    "@spectrum-web-components/theme": "^1.11.2"
   }
 }
