@@ -23,6 +23,9 @@ async function wrapPageInSpTheme() {
   themeEl.setAttribute('system', 'spectrum-two');
   themeEl.setAttribute('scale', 'medium');
   themeEl.setAttribute('color', getThemeFromUrl());
+  const main = document.querySelector('main');
+  main.style.backgroundColor = 'var(--spectrum-background-color-default, var(--spectrum-gray-50, #fff))';
+  main.style.color = 'var(--spectrum-content-color-default, var(--spectrum-gray-900, #2d2d2d))';
   while (document.body.firstChild) {
     themeEl.appendChild(document.body.firstChild);
   }

@@ -119,12 +119,15 @@ export default async function decorate(block) {
   const contentId = linkEl?.getAttribute('data-content-id') || null;
   const contentName = linkEl?.getAttribute('data-content-name') || null;
 
+  const left = createTag('div', { class: 'row-card-left' });
   const iconWrap = createTag('div', { class: 'row-card-icon' });
   if (iconImage) {
     iconWrap.append(iconImage);
+    left.append(iconWrap);
   }
 
   const body = createTag('div', { class: 'row-card-body' });
+
   if (title) {
     const titleEl = createTag('h3', { class: 'row-card-title' });
     titleEl.textContent = title;
@@ -135,6 +138,8 @@ export default async function decorate(block) {
     descEl.textContent = description;
     body.append(descEl);
   }
+
+  left.append(body);
 
   const ctaWrap = createTag('div', { class: 'row-card-cta' });
   decorateButton({
@@ -148,7 +153,7 @@ export default async function decorate(block) {
   });
 
   const inner = createTag('div', { class: 'row-card-inner' });
-  inner.append(iconWrap, body, ctaWrap);
+  inner.append(left, ctaWrap);
 
   block.innerHTML = '';
   block.append(inner);

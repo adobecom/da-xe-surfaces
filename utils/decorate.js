@@ -44,6 +44,7 @@ export function decorateText({ target, text = '', tag = 'span', className = 'tex
 /** Preset keys that map to .{key} classes in styles.css (e.g. .heading-xl, .body-m). Use Font block or decorateFont() anywhere. */
 export const FONT_PRESET_KEYS = new Set([
   'heading-xxxl', 'heading-xxl', 'heading-xl', 'heading-l', 'heading-m', 'heading-s', 'heading-xs', 'heading-xxs',
+  'title-xl',
   'body-xxxl', 'body-xxl', 'body-xl', 'body-l', 'body-m', 'body-s', 'body-xs',
   'detail-l', 'detail-m', 'detail-s',
 ]);

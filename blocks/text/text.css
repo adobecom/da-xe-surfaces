@@ -1,3 +1,25 @@
+/* Heading/body spacing (Milo-style): margin between heading and body via var(--spectrum-spacing-300) ≈ 16px */
+.text p,
+.text [class^="body-"] {
+  margin: var(--spectrum-spacing-300, 16px) 0;
+}
+
+.text [class^="body-"]:only-child {
+  margin: 0;
+}
+
+.text [class^="heading"] {
+  margin: 0 0 var(--spectrum-spacing-300, 16px) 0;
+}
+
+.text [class^="detail"] {
+  margin: 0 0 var(--spectrum-spacing-200, 8px) 0;
+}
+
+.text div > *:last-child {
+  margin-bottom: 0;
+}
+
 /* Alignment: pass center-alignment, left-alignment, right-alignment, justify-alignment, or center, left, right, justify */
 
 .text.text-align-center {

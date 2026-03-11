@@ -3,7 +3,6 @@ const LOCAL_BLOCKS = [
   'row-card',
   'text',
   'page-metadata',
-  'url-metadata',
 ];
 
 const AUTO_BLOCKS = [
@@ -36,34 +35,6 @@ ENVS.local = {
   ...ENVS.stage,
   name: 'local',
 };
-
-/** URL metadata: shorthand → { cchstage?, cchprod?, ccdstage?, ccdprod?, sso? }. Keys come from block classes.
- * Populated by url-metadata block(s); entries merge when same shorthand. */
-const urlMetadataMap = new Map();
-
-export function setUrlMetadata(entries) {
-  if (!entries || typeof entries !== 'object') return;
-  Object.entries(entries).forEach(([key, val]) => {
-    const k = key.trim().toLowerCase();
-    const existing = urlMetadataMap.get(k);
-    const merged = existing && typeof existing === 'object' && typeof val === 'object'
-      ? { ...existing, ...val }
-      : val;
-    urlMetadataMap.set(k, merged);
-  });
-}
-
-/**
- * Get the full url-metadata entry for a shorthand (URL slots + optional sso).
- * Entry keys are slot names from block classes: cchstage, cchprod, ccdstage, ccdprod, sso (object).
- * @param {string} shorthand - Key from url-metadata (e.g. 'openFireflyOnWeb')
- * @returns {{ cchstage?: string, cchprod?: string, ccdstage?: string,
- *  ccdprod?: string, sso?: Record<string, string> }|null}
- */
-export function getUrlMetadataEntry(shorthand) {
-  if (!shorthand?.trim()) return null;
-  return urlMetadataMap.get(shorthand.trim().toLowerCase()) || null;
-}
 
 /**
  * Return the federated URL for a given href (e.g. /federal/...).
@@ -148,7 +119,7 @@ export const [setConfig, getConfig] = (() => {
       const pathname = conf.pathname || window.location.pathname;
       config = { env: getEnv(conf), ...conf };
       config.codeRoot = conf.codeRoot ? `${origin}${conf.codeRoot}` : origin;
-      config.base = config.miloLibs || config.codeRoot;
+      config.base = config.libs || config.codeRoot;
       config.locale = pathname ? getLocale(conf.locales, pathname) : getLocale(conf.locales);
       config.autoBlocks = conf.autoBlocks ? [...AUTO_BLOCKS, ...conf.autoBlocks] : AUTO_BLOCKS;
       config.signInContext = conf.signInContext || {};
@@ -178,42 +149,10 @@ export const [setConfig, getConfig] = (() => {
   ];
 })();
 
-/** Slot name for current env: cchstage | cchprod | ccdstage | ccdprod (matches block class names). */
-function getCurrentUrlSlot() {
-  const conf = getConfig();
-  const env = conf.environment ?? conf.env?.name;
-  const type = conf.host;
-  if (type === 'cch' || type === 'ccd') {
-    const isStage = env === 'stage' || env === 'dev' || !env;
-    return type + (isStage ? 'stage' : 'prod');
-  }
-  const { hostname } = window.location;
-  const isStage = hostname.includes('stage') || hostname.includes('localhost');
-  const isCcd = hostname.includes('ccd');
-  return (isCcd ? 'ccd' : 'cch') + (isStage ? 'stage' : 'prod');
-}
-
-/**
- * Resolve a URL shorthand to the full URL for the current environment and host.
- * Uses url-metadata map; entry keys are slot names from block classes
- * (cchstage, cchprod, ccdstage, ccdprod, ssodetails).
- * @param {string} shorthand - Key from url-metadata (e.g. 'openFireflyOnWeb')
- * @returns {string|null} Resolved URL or null if not found
- */
-export function getResolvedUrl(shorthand) {
-  const entry = getUrlMetadataEntry(shorthand);
-  if (!entry || typeof entry !== 'object') return null;
-  const slot = getCurrentUrlSlot();
-  const url = entry[slot];
-  return typeof url === 'string' ? url.trim() : null;
-}
-
 export async function decorateLinks(el) {
   const anchors = el.getElementsByTagName('a');
 
   const links = [...anchors].reduce((rdx, a) => {
-    // Extract attributes using pipe syntax: "Text | Aria label"
-    // Maps to: aria-label, data-content-id, data-content-name
     const textContent = a.textContent || '';
     if (textContent.includes('|')) {
       const parts = textContent.split('|').map((p) => p.trim());
@@ -265,8 +204,7 @@ function normalizeHrefForResolve(href) {
 }
 
 /**
- * Resolve link hrefs that use url-metadata shorthand: "shorthand | data-content-id | data-content-name".
- * Call after url-metadata block(s) have run so getResolvedUrl() can resolve the shorthand.
+ * Resolve link hrefs that use "url | data-content-id".
  * @param {Document|Element} area - Root to search for anchors (default document)
  */
 export function resolveLinkHrefs(area = document) {
@@ -286,19 +224,14 @@ export function resolveLinkHrefs(area = document) {
     if (href.includes(' | ')) pipeSplit = ' | ';
     else if (href.includes('%20%7C%20')) pipeSplit = '%20%7C%20';
     else if (href.includes(' %7C ')) pipeSplit = ' %7C ';
-    let shorthand = null;
+    let url = null;
     if (pipeSplit) {
-      const [shorthandPart, contentIdPart] = href.split(pipeSplit).map((p) => p.trim());
-      shorthand = shorthandPart;
+      const [urlPart, contentIdPart] = href.split(pipeSplit).map((p) => p.trim());
+      url = urlPart;
       if (contentIdPart) a.setAttribute('data-content-id', contentIdPart);
-    } else if (urlMetadataMap.has(href.trim().toLowerCase())) {
-      shorthand = href.trim().toLowerCase();
-    } else {
-      return;
     }
-    const resolved = getResolvedUrl(shorthand);
-    if (resolved) {
-      a.href = resolved;
+    if (url) {
+      a.href = url;
     }
   });
 }
@@ -352,7 +285,7 @@ export function setupLinkClickHandler(container) {
         data: {
           eventType: 'click',
           subtype: hasAnalytics,
-          href,
+          contentAction: href,
         },
       };
       container.dispatchEvent(new CustomEvent(XE_SITES_EVENT, {
@@ -686,41 +619,6 @@ export async function loadBlock(block) {
   return block;
 }
 
-/**
- * Collect all .url-metadata elements under the given root(s), including inside shadow roots.
- * @param {Element|DocumentFragment} root - Root to search
- * @returns {Element[]}
- */
-function collectUrlMetadataBlocks(root) {
-  const set = new Set();
-  function walk(r) {
-    if (!r?.querySelectorAll) return;
-    r.querySelectorAll('.url-metadata').forEach((el) => set.add(el));
-    r.querySelectorAll('*').forEach((el) => {
-      if (el.shadowRoot) walk(el.shadowRoot);
-    });
-  }
-  walk(root);
-  return [...set];
-}
-
-/**
- * Ensure url-metadata blocks are loaded so urlMetadataMap is populated before resolving links.
- * Searches document.body and, when area is not document, the area's tree (including shadow roots).
- * Export for callers (e.g. web components) that render content without calling loadArea.
- * @param {Document|Element} [area=document] - Area that will contain links to resolve
- * @returns {Promise<void>}
- */
-export async function ensureUrlMetadataLoaded(area = document) {
-  const roots = area === document ? [document.body] : [document.body, area];
-  const blocks = roots.flatMap((r) => collectUrlMetadataBlocks(r));
-  const unique = [...new Set(blocks)];
-  await Promise.all(unique.map((b) => {
-    b.dataset.blockName = 'url-metadata';
-    return loadBlock(b);
-  }));
-}
-
 export function partition(arr, fn) {
   return arr.reduce(
     (acc, val, i, ar) => {
@@ -781,9 +679,6 @@ export async function loadArea(area = document) {
   const pageMetaBlocks = sections.flatMap((s) => s.blocks).filter((b) => b.classList?.[0] === 'page-metadata');
   await Promise.all(pageMetaBlocks.map((b) => loadBlock(b)));
 
-  // Load url-metadata so shorthand→URL map is ready before resolving link hrefs.
-  // ensureUrlMetadataLoaded finds .url-metadata in document.body and in area (including shadow roots).
-  await ensureUrlMetadataLoaded(area);
   resolveLinkHrefs(area === document ? document.body : area);
 
   const areaBlocks = [];

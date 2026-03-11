@@ -15,31 +15,24 @@ import '@spectrum-web-components/button/sp-button.js';
 import pageMetadataDecorate from './blocks/page-metadata/page-metadata.js';
 import rowCardDecorate from './blocks/row-card/row-card.js';
 import textDecorate from './blocks/text/text.js';
-import urlMetadataDecorate from './blocks/url-metadata/url-metadata.js';
 import adobetvDecorate from './blocks/adobetv/adobetv.js';
-import fragmentDecorate from './blocks/fragment/fragment.js';
 
 // Static CSS imports — webpack bundles these (runtime loadCSS would 404 in nest)
 import './styles/styles.css';
 import './blocks/page-metadata/page-metadata.css';
 import './blocks/row-card/row-card.css';
 import './blocks/text/text.css';
-import './blocks/url-metadata/url-metadata.css';
 import './blocks/adobetv/adobetv.css';
-import './blocks/fragment/fragment.css';
 
 // Skip runtime CSS loading (files aren't served by nest, webpack already bundled them)
 window.app = window.app || {};
-window.app.BUILD_MODE = 'builtin';
+window.app.BUILD_MODE = window.app.BUILD_MODE || 'builtin';
 
 // Block registry — loadBlock checks this before attempting dynamic import.
-// Align with blocks in repo + utils LOCAL_BLOCKS.
 window.xeBlockRegistry = {
   'page-metadata': pageMetadataDecorate,
-  fragment: fragmentDecorate,
   'row-card': rowCardDecorate,
   text: textDecorate,
-  'url-metadata': urlMetadataDecorate,
   adobetv: adobetvDecorate, // fragment class can be adobetv (no hyphen)
 };
 
@@ -49,7 +42,7 @@ function getConfigForPath(pathname) {
   return {
     contentRoot: '/',
     codeRoot: '/',
-    miloLibs: window.location.origin,
+    libs: window.location.origin,
     pathname: pathname || window.location.pathname,
   };
 }
@@ -70,7 +63,7 @@ export default class XeSites extends LitElement {
     host: { type: String, reflect: true },
   };
 
-  // Render in light DOM so block CSS and SWC styles apply
+  /** Light DOM: block CSS in document.head; postcss-prefixwrap scopes to xe-sites. */
   createRenderRoot() {
     return this;
   }
@@ -237,7 +230,13 @@ export default class XeSites extends LitElement {
     if (this.loadError) {
       return html`<p role="alert">Failed to load fragment: ${this.loadError}</p>`;
     }
-    return html`<div id="fragment-container" style="display: block; height: 100%; min-height: 0;"></div>`;
+    /* xe-sites-reset blocks Nest inheritance; block CSS (xe-sites .block) still applies */
+    return html`
+    <style>
+     .xe-sites-reset{color: initial;}
+    </style>
+      <div class="xe-sites-reset"><div id="fragment-container" style="display: block; height: 100%; min-height: 0;"></div></div>
+    `;
   }
 }
 

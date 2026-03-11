@@ -100,6 +100,7 @@ const createIframe = (block, href) => {
             data: {
               eventType: 'click',
               subtype: 'video',
+              contentAction: videoHref,
             },
           },
         }));

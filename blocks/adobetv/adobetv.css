@@ -18,8 +18,5 @@ a.hide-video {
   width: 100%;
   height: 100%;
   position: absolute;
-}
-
-.dialog-modal .boost-video {
-  min-width: 80vw;
+  border-radius: var(--spectrum-corner-radius-800, 16px);
 }

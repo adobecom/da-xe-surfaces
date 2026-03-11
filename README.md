@@ -1,106 +1,126 @@
-# Milo goes to college
-Use this project template to create a Milo site on DA! [milo-college](https://github.com/adobecom/milo-college) is the Sharepoint equivalent to this project.
+# da-xe-surfaces
 
-## Steps
+Website foundation technology for DA (Digital Assistant) surfaces. Provides the `<xe-sites>` web component and block system for rendering Milo-style content in Spectrum-themed layouts. Used by both **head.html** (Milo/AEM full-page) and **Nest** (e.g. Boost applet).
 
-1. Copy existing [`college`](https://adobe.sharepoint.com/:f:/r/sites/adobecom/Shared%20Documents/demos/college) content folder to your sharepoint and give helix@adobe.com View access
-2. Click "[Use this template](https://github.com/adobecom/milo-college/generate)" Github button on this project.
-3. Install the [AEM Code Sync Bot](https://github.com/apps/aem-code-sync)
+## Architecture
 
-From your newly created project
+- **`<xe-sites>`** — LitElement web component that fetches a fragment (`.plain.html`), wraps it in `sp-theme`, and runs block decorators.
+- **Block registry** — `window.xeBlockRegistry` maps block names to decorator functions. Blocks transform table-based markup into final UI.
+- **Bundle** — Webpack builds `dist/da-xe-surfaces.js` from `bundle-entry.js`, which imports `init.js` (xe-sites + SWC) and `scripts/scripts.js` (full-page logic).
 
-1. Install the [Helix Bot](https://github.com/apps/helix-bot/installations/new).
-2. Change the fstab.yaml file to point to your content.
-3. Add the project to the [Helix Sidekick](https://github.com/adobe/helix-sidekick).
-4. Start creating your content.
+### Two modes
+
+| Mode | Trigger | Behavior |
+|------|---------|----------|
+| **Dynamic** (head.html) | `BUILD_MODE === 'dynamic'` in head | `scripts.js` wraps the page in `sp-theme`, runs `loadArea(main)`, decorates blocks. Theme from URL: `?theme=dark` or `#theme=dark`. |
+| **Builtin** (Nest) | `BUILD_MODE === 'builtin'` (default) | Host renders `<xe-sites path="..." theme="dark">`. Component loads fragment and decorates blocks. Theme from `theme` prop. |
+
+### head.html
+
+`head.html` sets `BUILD_MODE = "dynamic"` and loads:
+
+```html
+<link rel="stylesheet" href="/styles/styles.css"/>
+<script type="module" src="/dist/da-xe-surfaces.js"></script>
+```
+
+The bundle includes Spectrum Web Components (sp-theme, sp-button), block logic, and full-page scripts. No import map or separate SWC scripts are needed.
+
+### Blocks
+
+| Block | Purpose |
+|-------|---------|
+| `page-metadata` | Page-level metadata (padding, theme) |
+| `row-card` | Row layout with icon, title, description |
+| `text` | Typography (headings, body) |
+| `adobetv` | Adobe TV embed |
 
 ## Developing
+
 1. Install the [Helix CLI](https://github.com/adobe/helix-cli): `sudo npm install -g @adobe/aem-cli`
-1. Run `aem up` this repo's folder. (opens your browser at `http://localhost:3000`)
-1. Open this repo's folder in your favorite editor and start coding.
+2. Run `aem up` in this repo's folder. (Opens browser at `http://localhost:3000`)
+3. Run `npm run build` to rebuild `dist/da-xe-surfaces.js` after changes.
+
+## Building
+
+```sh
+npm run build
+```
+
+Produces `dist/da-xe-surfaces.js` (and source map). Entry: `bundle-entry.js` → `init.js` + `scripts/scripts.js`.
 
 ## Testing
+
 ```sh
 npm run test
 ```
+
 or:
+
 ```sh
 npm run test:watch
 ```
-This will give you several options to debug tests. Note: coverage may not be accurate.
 
-## Using xe-sites in another repo
+## Using xe-sites in another repo (e.g. Nest)
 
-The `<xe-sites>` web component loads and renders a fragment (`.plain.html`) inside a Spectrum-themed container. Other repos can use it in one of these ways:
+The `<xe-sites>` web component loads and renders a fragment (`.plain.html`) inside a Spectrum-themed container.
 
-### 1. npm dependency (recommended when using a bundler)
+### npm dependency (recommended when using a bundler)
 
-Install the package (from npm if published, or from Git):
+Install the package:
 
 ```bash
-# If published to npm:
 npm install @adobecom/da-xe-surfaces
-
-# Or from Git (replace with your repo URL):
+# Or from Git:
 npm install git+https://github.com/adobecom/da-xe-surfaces.git
 ```
 
-**Peer dependencies** (install in the consuming repo if not already present; versions aligned with nest):
+**Peer dependencies** (versions aligned with Nest):
 
 ```bash
 npm install lit@^2.7.3 @spectrum-web-components/theme@0.47.2 @spectrum-web-components/button@0.47.2
 ```
 
-**In your app:** Import the main module so your bundler (webpack, Vite, etc.) bundles it and its CSS:
+**In your app:** Import so your bundler bundles it and its CSS:
 
 ```js
 import '@adobecom/da-xe-surfaces';
 ```
 
-Then use the custom element in HTML or in your framework’s template:
+Then use the custom element:
 
 ```html
-<xe-sites path="/path/to/fragment"></xe-sites>
+<xe-sites path="/path/to/fragment.plain.html" theme="dark"></xe-sites>
 ```
 
-Or with an absolute URL (for cross-origin, set `window.xeSitesFragmentProxy` to a proxy URL; see `xe-sites-test.html`):
+**Props:**
 
-```html
-<xe-sites path="https://main--your-site--adobecom.aem.page/index.plain.html"></xe-sites>
-```
+| Prop | Type | Description |
+|------|------|-------------|
+| `path` | string | Fragment URL (relative or absolute) |
+| `theme` | `'light' \| 'dark'` | Overrides URL theme when set (e.g. from Boost) |
+| `scale` | `'medium' \| 'large'` | sp-theme scale. Default `medium`. |
+| `themeSystem` | `'spectrum' \| 'spectrum-two'` | Default `spectrum-two`. |
+| `environment` | `'stage' \| 'prod'` | For URL resolution. |
+| `host` | `'cch' \| 'ccd'` | Host app type. |
 
-The package `main` is `init.js`, which imports Lit, Spectrum components, and CSS. The consuming app’s bundler must resolve those (and handle CSS). If the other repo does **not** use a bundler, use option 2.
+Package `main` is `init.js`. The consuming app's bundler must resolve Lit, Spectrum components, and CSS.
 
-### 2. Script tag + link tags (no bundler)
+### Cross-origin fragment proxy
 
-Load the component and its styles from a URL (e.g. your deployed da-xe-surfaces or a CDN):
-
-- Add an [import map](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/script/type/importmap) for `lit` and `@spectrum-web-components/*` (see `xe-sites-test.html` or `head.html`).
-- Load all required CSS with `<link rel="stylesheet" href="...">` (see the list in `xe-sites-test.html`).
-- Load the **browser** entry (no CSS imports) as a module:  
-  `<script type="module" src="https://your-origin/init-browser.js"></script>`  
-  You must host/serve `init-browser.js` and the rest of the repo (or a built bundle that exposes the same entry).
-
-Option 1 is simpler if the other repo already uses a bundler.
-
-**React test app (in this repo):** A small Vite + React app in `react-xe-sites-test/` demonstrates Option 1. From the repo root:
-
-```sh
-cd react-xe-sites-test && npm install && npm run dev
-```
-
-Then open http://localhost:5174 and use the input to change the fragment URL.
-
-### 3. Optional: fragment proxy for cross-origin
-
-When the fragment URL is on another origin, the browser may block the request (CORS). The host page can set a proxy so the request goes through the same origin or a CORS-enabled proxy:
+When the fragment URL is on another origin, set a proxy before loading the script:
 
 ```js
-// Before loading the xe-sites script:
 window.xeSitesFragmentProxy = 'https://your-backend-proxy/?url=';
-// Or a function: window.xeSitesFragmentProxy = (url) => 'https://your-proxy/?url=' + encodeURIComponent(url);
+// Or a function:
+window.xeSitesFragmentProxy = (url) => 'https://your-proxy/?url=' + encodeURIComponent(url);
 ```
 
+## Typography
+
+Uses Spectrum tokens with Milo-aligned sizes. Heading/body presets: `.heading-xxxl` … `.heading-xxs`, `.body-xxl` … `.body-xxs`. See `styles/styles.css`.
+
 ## Security
+
 1. Create a Service Now ID for your project via [Service Registry Portal](https://adobe.service-now.com/service_registry_portal.do#/search)
-2. Update the `.kodiak/config.yaml` file to make sure valid team members are assigned security vulnerability Jira tickets.
+2. Update `.kodiak/config.yaml` so valid team members are assigned security vulnerability Jira tickets.

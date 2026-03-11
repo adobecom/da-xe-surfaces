@@ -3,11 +3,19 @@ import { FONT_PRESET_KEYS } from '../../utils/decorate.js';
 const HEADING_SIZES = ['xxxl', 'xxl', 'xl', 'l', 'm', 's', 'xs', 'xxs'];
 const BODY_SIZES = ['xxxl', 'xxl', 'xl', 'l', 'm', 's', 'xs'];
 const ALIGNMENTS = ['center', 'left', 'right', 'justify'];
+const TITLE_SIZES = ['xl'];
 
 function getHeadingPreset(block) {
   const classes = [...(block.classList || [])];
-  const size = HEADING_SIZES.find((s) => classes.includes(`${s}-heading`));
-  return size ? `heading-${size}` : null;
+  const headingSize = HEADING_SIZES.find((s) => classes.includes(`${s}-heading`));
+  if (headingSize) {
+    return `heading-${headingSize}`;
+  }
+  const titleSize = TITLE_SIZES.find((s) => classes.includes(`${s}-title`));
+  if (titleSize) {
+    return `title-${titleSize}`;
+  }
+  return null;
 }
 
 function getBodyPreset(block) {

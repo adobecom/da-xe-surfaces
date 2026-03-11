@@ -6,7 +6,6 @@
   "version": "1.0.0",
   "description": "Website foundation technology.",
   "scripts": {
-    "react-test": "npm run dev --prefix react-xe-sites-test",
     "test": "wtr \"./test/**/*.test.js\" --node-resolve --port=2000 --coverage",
     "test:watch": "npm test -- --watch",
     "lint": "npm run lint:js && npm run lint:css",

@@ -1,13 +1,17 @@
 const path = require('path');
 
 module.exports = {
-  entry: './init.js',
+  entry: './bundle-entry.js',
   output: {
     path: path.resolve(__dirname, 'dist'),
-    filename: 'main.js',
+    filename: 'da-xe-surfaces.js',
   },
   devtool: 'source-map',
-  mode: process.env.NODE_ENV || 'production',
+  mode: 'production',
+  optimization: {
+    minimize: true,
+    splitChunks: false,
+  },
   module: {
     rules: [
       {
@@ -21,7 +25,6 @@ module.exports = {
       },
     ],
   },
-  resolve: {
-    extensions: ['.js'],
-  },
+  resolve:
+  { extensions: ['.js'] },
 };

@@ -18,8 +18,13 @@ sp-theme {
   min-height: 100vh;
   box-sizing: border-box;
   padding: 0; /* no default padding; page-metadata "padding" adds spacing classes when needed */
-  /* background-color: var(--spectrum-background-color-default, var(--spectrum-gray-50, #fff));
-  color: var(--spectrum-content-color-default, var(--spectrum-gray-900, #2d2d2d)); */
+
+  /* Primary button content color in 0.47.2.0  version was set to var(--spectrum-white) and due to that contrast was not good enough for primary button in dark theme. */
+  --system-spectrum-button-primary-content-color-default: var(--spectrum-gray-25, #111);
+  --system-spectrum-button-primary-content-color-hover: var(--spectrum-gray-25, #111);
+  --system-spectrum-button-primary-content-color-down: var(--spectrum-gray-25, #111);
+  --system-spectrum-button-primary-content-color-focus: var(--spectrum-gray-25, #111);
+
 }
 
 /* sp-theme spacing from page-metadata "padding" – padding on theme so inset content gets theme background */
@@ -58,21 +63,6 @@ sp-theme.xxl-spacing-bottom { padding-bottom: var(--spectrum-spacing-700, 48px);
 sp-theme.xxxl-spacing-bottom { padding-bottom: var(--spectrum-spacing-800, 56px); }
 sp-theme.ivxl-spacing-bottom { padding-bottom: var(--spectrum-spacing-900, 64px); }
 sp-theme.vxl-spacing-bottom { padding-bottom: var(--spectrum-spacing-1000, 80px); }
-
-/*
- * Root cause: @spectrum-web-components/theme spectrum-two theme-core-tokens sets
- * --system-spectrum-button-primary-content-color-* to var(--spectrum-white) for primary
- * buttons. So primary CTA text is white by design. In the fragment (e.g. Boost dialog)
- * we use dark theme but row-cards use a light surface; primary CTAs there need dark text.
- * Fix: set the design token for this context so the fragment subtree uses the correct
- * primary button content color (no change to variant or component code).
- */
-xe-sites #fragment-container sp-theme {
-  --system-spectrum-button-primary-content-color-default: var(--spectrum-gray-900, #181818);
-  --system-spectrum-button-primary-content-color-hover: var(--spectrum-gray-900, #181818);
-  --system-spectrum-button-primary-content-color-down: var(--spectrum-gray-900, #181818);
-  --system-spectrum-button-primary-content-color-key-focus: var(--spectrum-gray-900, #181818);
-}
 
 /* block spacing */
 .block.no-spacing { padding: 0; }
@@ -141,7 +131,7 @@ xe-sites #fragment-container sp-theme {
 .heading-xl {
   font-family: var(--spectrum-sans-serif-font-family, var(--spectrum-default-font-family, system-ui, sans-serif));
   font-size: var(--spectrum-heading-size-xl, 2rem);
-  font-weight: var(--spectrum-heading-sans-serif-font-weight, var(--spectrum-bold-font-weight, 700));
+  font-weight: var(--spectrum-extra-bold-font-weight, 800);
   line-height: var(--spectrum-heading-line-height, var(--spectrum-line-height-100, 1.25));
 }
 .heading-l {
@@ -219,6 +209,13 @@ xe-sites #fragment-container sp-theme {
   line-height: var(--spectrum-body-line-height, var(--spectrum-line-height-200, 1.5));
 }
 
+.title-xl {
+  font-family: var(--spectrum-sans-serif-font-family, var(--spectrum-default-font-family, system-ui, sans-serif));
+  font-size: var(--spectrum-font-size-400, 20px);
+  font-weight: var(--spectrum-bold-font-weight, 700);
+  line-height: var(--spectrum-line-height-100, 1.2);
+}
+
 
 /* Heading presets apply only to headings (h1–h6). */
 .heading-xxxl h1, .heading-xxxl h2, .heading-xxxl h3, .heading-xxxl h4, .heading-xxxl h5, .heading-xxxl h6,
@@ -228,7 +225,7 @@ xe-sites #fragment-container sp-theme {
 .heading-m h1, .heading-m h2, .heading-m h3, .heading-m h4, .heading-m h5, .heading-m h6,
 .heading-s h1, .heading-s h2, .heading-s h3, .heading-s h4, .heading-s h5, .heading-s h6,
 .heading-xs h1, .heading-xs h2, .heading-xs h3, .heading-xs h4, .heading-xs h5, .heading-xs h6,
-.heading-xxs h1, .heading-xxs h2, .heading-xxs h3, .heading-xxs h4, .heading-xxs h5, .heading-xxs h6 {
+.heading-xxs h1, .heading-xxs h2, .heading-xxs h3, .heading-xxs h4, .heading-xxs h5, .heading-xxs h6 .title-xl h1, .title-xl h2, .title-xl h3, .title-xl h4, .title-xl h5, .title-xl h6 {
   font-family: inherit;
   font-size: inherit;
   font-weight: inherit;
