@@ -1,9 +1,9 @@
 import { FONT_PRESET_KEYS } from '../../utils/decorate.js';
 
-const HEADING_SIZES = ['xxxl', 'xxl', 'xl', 'l', 'm', 's', 'xs', 'xxs'];
-const BODY_SIZES = ['xxxl', 'xxl', 'xl', 'l', 'm', 's', 'xs'];
+const HEADING_SIZES = ['xl', 'lg', 'm', 'sm', 'xs'];
+const BODY_SIZES = ['xl', 'lg', 'm', 'sm', 'xs'];
 const ALIGNMENTS = ['center', 'left', 'right', 'justify'];
-const TITLE_SIZES = ['xl'];
+const TITLE_SIZES = ['xl', 'lg', 'm', 'sm', 'xs'];
 
 function getHeadingPreset(block) {
   const classes = [...(block.classList || [])];
