@@ -7,11 +7,12 @@ module.exports = {
     allowImportExportEverywhere: true,
     sourceType: 'module',
     requireConfigFile: false,
+    babelOptions: { presets: ['@babel/preset-react'] },
   },
   rules: {
     'no-param-reassign': [2, { props: false }],
     'linebreak-style': ['error', 'unix'],
-    'import/extensions': ['error', { js: 'always' }],
+    'import/extensions': 'off',
     'object-curly-newline': ['error', {
       ObjectExpression: { multiline: true, minProperties: 6 },
       ObjectPattern: { multiline: true, minProperties: 6 },
@@ -38,17 +39,44 @@ module.exports = {
       },
     },
     {
-      files: ['utils/decorate.js'],
+      files: ['util/fetchMedia.js'],
       rules: {
-        'max-len': ['warn', { code: 120 }],
+        'no-await-in-loop': 'off',
+        'import/prefer-default-export': 'off',
       },
+    },
+    {
+      files: ['util/parsePlainHtml.js'],
+      rules: {
+        'max-len': ['warn', { code: 130, ignoreUrls: true, ignoreStrings: true }],
+        'no-plusplus': 'off',
+        'no-continue': 'off',
+        'no-restricted-syntax': 'off',
+        'func-names': 'off',
+      },
+    },
+    {
+      files: ['utils/decorate.js'],
+      rules: { 'max-len': ['warn', { code: 120 }] },
     },
     {
       files: ['web-test-runner.config.js'],
       rules: { 'import/no-extraneous-dependencies': 'off' },
     },
+    {
+      files: ['blocks/react/**/*.jsx', 'ui/**/*.jsx'],
+      extends: ['plugin:react/recommended'],
+      rules: {
+        'react/jsx-uses-react': 'off',
+        'react/react-in-jsx-scope': 'off',
+        'react/prop-types': 'off',
+        'import/extensions': 'off',
+      },
+    },
   ],
   plugins: [
     'chai-friendly',
+    'react',
   ],
+  settings: { react: { version: 'detect' } },
 };

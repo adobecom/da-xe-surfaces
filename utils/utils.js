@@ -245,65 +245,87 @@ export function resolveLinkHrefs(area = document) {
 export const XE_SITES_EVENT = 'xe-sites-event';
 
 /**
- * Get the link or button element that was clicked (a[href] or sp-button with href).
+ * Get the link or CTA (button) element that was clicked.
+ * Links: href is clean URL; openInNewTab/contentId from data-* (set when href was normalized).
  * @param {Event} e - Click event
- * @returns {{ el: Element, href: string }|null}
+ * @returns {{ el: Element, href: string, openInNewTab?: boolean, contentId?: string }|null}
  */
-function getClickedLinkOrButton(e) {
-  const { target } = e;
-  const link = target?.closest?.('a[href]');
-  if (link) return { el: link, href: link.href || link.getAttribute('href') || '' };
-  const btn = target?.closest?.('sp-button[href]') || target?.closest?.('sp-button');
-  if (btn) {
-    const href = btn.getAttribute?.('href') || btn.href || '';
-    if (href) return { el: btn, href };
+function getClickedCta(e) {
+  const t = e?.target;
+  const link = t?.closest?.('a[href]');
+  if (link) {
+    const href = link.href || link.getAttribute('href') || '';
+    const openInNewTab = link.getAttribute('data-open-in-new-tab') === 'true';
+    const contentId = link.getAttribute('data-content-id') || undefined;
+    return { el: link, href, ...(openInNewTab && { openInNewTab: true }), ...(contentId && { contentId }) };
+  }
+  const button = t?.closest?.('button[href]') || t?.closest?.('button') || t?.closest?.('[role="button"][href]') || t?.closest?.('[role="button"]');
+  if (button) {
+    const href = button.getAttribute?.('href') || button.href || '';
+    if (href) return { el: button, href };
   }
   return null;
 }
 
+/** Parse "url | contentId" and #_blank; used for links and CTAs. */
+export function extractHrefAndContentId(href) {
+  const parts = decodeURIComponent(href).split(' | ');
+  const url = parts[0]?.trim() || '';
+  const openInNewTab = url.includes('#_blank');
+  return {
+    url: url.replace('#_blank', ''),
+    contentId: parts.length > 1 ? parts[1]?.trim() : '',
+    openInNewTab,
+  };
+}
+
 /**
- * Attach delegated click handler. Dispatches up to two events per click:
- * - If element has data-content-id: analytics event (type 'analytics', subType 'track') first
- * - Then navigation event (type 'navigation', subType 'url')
- * @param {Element} container - Fragment container (e.g. #fragment-container) so clicks bubble here
+ * Emit CTA click events (analytics + navigation).
+ * Links pass clean href + data-* so openInNewTab/contentId from options; buttons pass raw href, we parse.
+ * @param {Element} container - Fragment container to dispatch on
+ * @param {{ href: string, contentId?: string, openInNewTab?: boolean }} options - href required
  */
-export function setupLinkClickHandler(container) {
-  if (!container?.addEventListener) return;
-  container.addEventListener('click', (e) => {
-    const result = getClickedLinkOrButton(e);
-    if (!result) return;
-    const { el, href } = result;
-    if (!href || href === '#') return;
-    e.preventDefault();
-    e.stopPropagation();
-    const openInNewTab = href.includes('#_blank');
-    const hasAnalytics = el.getAttribute?.('data-content-id');
-    if (hasAnalytics) {
-      const analyticsDetail = {
-        type: 'analytics',
-        subType: 'track',
-        data: {
-          eventType: 'click',
-          subtype: hasAnalytics,
-          contentAction: href,
-        },
-      };
-      container.dispatchEvent(new CustomEvent(XE_SITES_EVENT, {
-        bubbles: true,
-        composed: true,
-        detail: analyticsDetail,
-      }));
-    }
-    const navigationDetail = {
-      type: 'navigation',
-      subType: 'url',
-      data: { href, openInNewTab },
-    };
+export function emitCtaClick(container, options) {
+  if (!container || !options?.href || options.href === '#') return;
+  const parsed = extractHrefAndContentId(options.href);
+  const { url, contentId: parsedContentId, openInNewTab: parsedOpenInNewTab } = parsed;
+  const contentId = options.contentId != null ? options.contentId : parsedContentId;
+  const openInNewTab = options.openInNewTab === true || parsedOpenInNewTab;
+  const navHref = url;
+
+  if (contentId || url) {
     container.dispatchEvent(new CustomEvent(XE_SITES_EVENT, {
       bubbles: true,
       composed: true,
-      detail: navigationDetail,
+      detail: {
+        type: 'analytics',
+        subType: 'track',
+        data: { eventType: 'click', subtype: contentId || '', contentAction: url || '' },
+      },
     }));
+  }
+  container.dispatchEvent(new CustomEvent(XE_SITES_EVENT, {
+    bubbles: true,
+    composed: true,
+    detail: { type: 'navigation', subType: 'url', data: { href: navHref, openInNewTab } },
+  }));
+}
+
+/**
+ * Attach one delegated click listener: handle link and CTA (button) clicks,
+ * dispatch analytics (if subtype/contentId) then navigation.
+ * @param {Element} container - Fragment container (e.g. #fragment-container) so clicks bubble here
+ */
+export function setupCtaClickHandler(container) {
+  if (!container?.addEventListener) return;
+  container.addEventListener('click', (e) => {
+    const result = getClickedCta(e);
+    if (!result) return;
+    const { href, openInNewTab, contentId } = result;
+    if (!href || href === '#') return;
+    e.preventDefault();
+    e.stopPropagation();
+    emitCtaClick(container, { href, ...(openInNewTab && { openInNewTab: true }), ...(contentId && { contentId }) });
   }, true);
 }
 

@@ -1,0 +1,155 @@
+/**
+ * Typography for xe-sites blocks (Milo-style heading/body/detail classes).
+ * Scoped to xe-sites and .xe-sites-blocks for specificity over host resets.
+ * Uses Spectrum-compatible CSS variables when available, with rem fallbacks.
+ */
+xe-sites .xe-sites-blocks .heading-xxxl,
+xe-sites .xe-sites-blocks .heading-xxl,
+xe-sites .xe-sites-blocks .heading-xl,
+xe-sites .xe-sites-blocks .heading-l,
+xe-sites .xe-sites-blocks .heading-m,
+xe-sites .xe-sites-blocks .heading-s,
+xe-sites .xe-sites-blocks .heading-xs,
+xe-sites .xe-sites-blocks .heading-xxs,
+xe-sites .xe-sites-blocks .body-xxl,
+xe-sites .xe-sites-blocks .body-xl,
+xe-sites .xe-sites-blocks .body-l,
+xe-sites .xe-sites-blocks .body-m,
+xe-sites .xe-sites-blocks .body-s,
+xe-sites .xe-sites-blocks .body-xs,
+xe-sites .xe-sites-blocks .body-xxs,
+xe-sites .xe-sites-blocks .detail-xl,
+xe-sites .xe-sites-blocks .detail-l,
+xe-sites .xe-sites-blocks .detail-m,
+xe-sites .xe-sites-blocks .detail-s,
+xe-sites .xe-sites-blocks .detail-xs {
+  margin: 0;
+}
+
+xe-sites .xe-sites-blocks .heading-xxxl {
+  font-size: var(--type-heading-xxxl-size, 2.5rem);
+  line-height: var(--type-heading-xxxl-lh, 1.2);
+}
+
+xe-sites .xe-sites-blocks .heading-xxl {
+  font-size: var(--type-heading-xxl-size, 2rem);
+  line-height: var(--type-heading-xxl-lh, 1.25);
+}
+
+xe-sites .xe-sites-blocks .heading-xl {
+  font-size: var(--type-heading-xl-size, 1.75rem);
+  line-height: var(--type-heading-xl-lh, 1.3);
+}
+
+xe-sites .xe-sites-blocks .heading-l {
+  font-size: var(--type-heading-l-size, 1.5rem);
+  line-height: var(--type-heading-l-lh, 1.35);
+}
+
+xe-sites .xe-sites-blocks .heading-m {
+  font-size: var(--type-heading-m-size, 1.25rem);
+  line-height: var(--type-heading-m-lh, 1.4);
+}
+
+xe-sites .xe-sites-blocks .heading-s {
+  font-size: var(--type-heading-s-size, 1.125rem);
+  line-height: var(--type-heading-s-lh, 1.4);
+}
+
+xe-sites .xe-sites-blocks .heading-xs {
+  font-size: var(--type-heading-xs-size, 1rem);
+  line-height: var(--type-heading-xs-lh, 1.5);
+}
+
+xe-sites .xe-sites-blocks .heading-xxs {
+  font-size: var(--type-heading-xxs-size, 0.875rem);
+  line-height: var(--type-heading-xxs-lh, 1.5);
+}
+
+xe-sites .xe-sites-blocks .body-xxl {
+  font-size: var(--type-body-xxl-size, 1.25rem);
+  line-height: var(--type-body-xxl-lh, 1.5);
+}
+
+xe-sites .xe-sites-blocks .body-xl {
+  font-size: var(--type-body-xl-size, 1.125rem);
+  line-height: var(--type-body-xl-lh, 1.5);
+}
+
+xe-sites .xe-sites-blocks .body-l {
+  font-size: var(--type-body-l-size, 1rem);
+  line-height: var(--type-body-l-lh, 1.5);
+}
+
+xe-sites .xe-sites-blocks .body-m {
+  font-size: var(--type-body-m-size, 0.9375rem);
+  line-height: var(--type-body-m-lh, 1.5);
+}
+
+xe-sites .xe-sites-blocks .body-s {
+  font-size: var(--type-body-s-size, 0.875rem);
+  line-height: var(--type-body-s-lh, 1.5);
+}
+
+xe-sites .xe-sites-blocks .body-xs {
+  font-size: var(--type-body-xs-size, 0.8125rem);
+  line-height: var(--type-body-xs-lh, 1.5);
+}
+
+xe-sites .xe-sites-blocks .body-xxs {
+  font-size: var(--type-body-xxs-size, 0.75rem);
+  line-height: var(--type-body-xxs-lh, 1.5);
+}
+
+xe-sites .xe-sites-blocks .detail-xl,
+xe-sites .xe-sites-blocks .detail-l {
+  font-size: var(--type-detail-l-size, 0.875rem);
+  line-height: var(--type-detail-l-lh, 1.5);
+}
+
+xe-sites .xe-sites-blocks .detail-m {
+  font-size: var(--type-detail-m-size, 0.8125rem);
+  line-height: var(--type-detail-m-lh, 1.5);
+}
+
+xe-sites .xe-sites-blocks .detail-s {
+  font-size: var(--type-detail-s-size, 0.75rem);
+  line-height: var(--type-detail-s-lh, 1.5);
+}
+
+xe-sites .xe-sites-blocks .detail-xs {
+  font-size: var(--type-body-xs-size, 0.8125rem);
+  line-height: var(--type-body-xs-lh, 1.5);
+}
+
+xe-sites .xe-sites-blocks .detail-xl,
+xe-sites .xe-sites-blocks .detail-l,
+xe-sites .xe-sites-blocks .detail-m,
+xe-sites .xe-sites-blocks .detail-s {
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+/* Text block spacing (Milo-style) */
+xe-sites .xe-sites-blocks .block.text p,
+xe-sites .xe-sites-blocks .block.text [class^="body-"] {
+  margin: var(--spacing-xs, 0.5rem) 0;
+}
+
+xe-sites .xe-sites-blocks .block.text [class^="body-"]:only-child {
+  margin: 0;
+}
+
+xe-sites .xe-sites-blocks .block.text [class^="heading"] {
+  margin: 0 0 var(--spacing-xs, 0.5rem) 0;
+}
+
+xe-sites .xe-sites-blocks .block.text [class^="detail"] {
+  margin: 0 0 var(--spacing-xxs, 0.25rem) 0;
+}
+
+xe-sites .xe-sites-blocks .block.text ul,
+xe-sites .xe-sites-blocks .block.text ol {
+  margin: var(--spacing-xs, 0.5rem) 0;
+  padding-inline-start: 1.5em;
+}

@@ -1,248 +1,224 @@
 # da-xe-surfaces
 
-Website foundation technology for DA (Digital Assistant) surfaces. Provides the `<xe-sites>` web component and block system for rendering Milo-style content in Spectrum-themed layouts. Used by both **head.html** (Milo/AEM full-page) and **Nest** (e.g. Boost applet).
+Website foundation for rendering content blocks from **plain HTML** (Franklin/AEM-style). Runs in two modes:
 
-## Project structure
+- **head.html (full-page)** – Script drives the whole page: fetches the current path as `.plain.html`, parses it, and renders blocks into `main` or `body`.
+- **Embedded (e.g. Nest)** – Host app loads the bundle and mounts the `<xe-sites>` custom element with a `path` and `theme`; xe-sites fetches that path as `.plain.html` and renders inside the element. Events are dispatched for the host to handle navigation, analytics, and errors.
 
-```
-da-xe-surfaces/
-├── bundle-entry.js          # Webpack entry: define-patch → init → scripts
-├── define-patch.js          # Patches customElements.define to skip duplicate registrations
-├── init.js                  # XeSites LitElement, block registry, fragment loading
-├── head.html                # Milo/AEM: sets BUILD_MODE=dynamic, loads bundle
-├── 404.html                 # 404 page template
-├── blocks/                  # Block decorators (Milo-compatible authoring)
-│   ├── page-metadata/       # Page-level: class, style, analyticsParams
-│   ├── row-card/            # Row layout: icon, title, description, CTA
-│   ├── text/                # Typography: heading/body presets, alignment
-│   └── adobetv/             # Adobe TV iframe or native video
-├── utils/
-│   ├── utils.js             # loadArea, customFetch, createTag, resolveIcon, etc.
-│   └── decorate.js          # decorateButton, decorateBlockText, getButtonProps
-├── scripts/
-│   ├── scripts.js           # Full-page logic (dynamic mode): wrapPageInSpTheme, loadEager
-│   ├── accessibility.js    # Tab focus scroll, dialog aria attributes
-│   ├── generate-xe-components.js  # Prebuild: generates xe-*.js from package.json
-│   └── xe-replace-loader.js # Webpack: replaces sp-* with xe-* in blocks/utils/styles/scripts
-├── styles/
-│   └── styles.css           # Base styles, typography presets, block spacing
-├── xe-components.js         # Generated: imports all xe-*.js wrappers
-├── xe-theme.js, xe-button.js  # Generated: xe-* wrappers (isolated from host sp-*)
-├── xe-components.config.cjs # Optional: override auto-detected SWC mappings
-├── webpack.config.cjs       # Build config: swc-loader, xe-replace-loader, postcss
-├── postcss.config.cjs       # postcss-prefixwrap: scopes CSS to .xe-sites
-└── package.json
-```
+One build (`dist/da-xe-surfaces.js`) is used for both. Content is expected as Milo-style block markup (sections with `div.<block-name>`). Blocks are rendered with React and Spectrum 2 (S2).
 
-## Architecture
+---
 
-### xe-sites
+## Quick start
 
-LitElement web component that:
-
-1. Fetches a fragment (`.plain.html`) via `customFetch` (with retry for 425/503)
-2. Parses HTML, creates `<main>`, wraps it in `<xe-theme>`
-3. Runs `loadArea(main)` to decorate blocks from `window.xeBlockRegistry`
-4. Dispatches `xe-sites-event` for loading state, analytics, link handling
-
-Uses **xe-theme** and **xe-button** (not `sp-*`) so it stays isolated from Nest's React Spectrum / SWC.
-
-### Two modes
-
-| Mode | Trigger | Behavior |
-|------|---------|----------|
-| **Dynamic** (head.html) | `BUILD_MODE === 'dynamic'` in head | `scripts.js` wraps the page in `xe-theme`, runs `loadArea(main)`, decorates blocks. Theme from URL: `?theme=dark` or `#theme=dark`. |
-| **Builtin** (Nest) | `BUILD_MODE === 'builtin'` (default) | Host renders `<xe-sites path="..." theme="dark">`. Component loads fragment and decorates blocks. Theme from `theme` prop. |
-
-### head.html
-
-`head.html` sets `BUILD_MODE = "dynamic"` and loads:
-
-```html
-<link rel="stylesheet" href="/styles/styles.css"/>
-<script type="module" src="/dist/da-xe-surfaces.js"></script>
-```
-
-The bundle includes xe-components (xe-theme, xe-button), block logic, and full-page scripts. No import map or separate SWC scripts are needed.
-
-### xe-components (sp-* → xe-*)
-
-To avoid conflicts when xe-sites is embedded in Nest (which uses React Spectrum / SWC):
-
-1. **Prebuild** generates `xe-theme.js`, `xe-button.js`, etc. from `@spectrum-web-components/*` in `package.json`.
-2. **xe-replace-loader** replaces `sp-theme` → `xe-theme`, `sp-button` → `xe-button` in blocks, utils, styles, scripts at build time.
-3. Devs write standard SWC names (`sp-theme`, `sp-button`); the build produces isolated `xe-*` elements.
-
-Components are **auto-detected** from `package.json` dependencies. Optional config: `xe-components.config.cjs`.
-
-### Block registry
-
-`window.xeBlockRegistry` maps block names to decorator functions. Blocks transform table-based markup into final UI. Blocks are loaded from `loadBlock` (checks registry first, then dynamic import).
-
-| Block | Purpose |
-|-------|---------|
-| `page-metadata` | Page-level: `class`/`classes` → body, `style` → spacing, `analyticsParams` → data-content-name/id |
-| `row-card` | Row layout: picture, title, description, CTA button. Supports icon, blob URLs for media. |
-| `text` | Typography: heading/body presets (xl-heading, m-body, etc.), alignment (center, left, right). |
-| `adobetv` | Adobe TV embed: `video.tv.adobe.com` → iframe, `.mp4` → native video. |
-
-### Utils
-
-- **loadArea** — Finds sections, decorates blocks, runs `loadBlock` for each.
-- **customFetch** — Fetch with retry, cache rules, cross-origin proxy support.
-- **createTag** — Creates elements with attributes.
-- **decorateButton** — Renders `sp-button` (→ xe-button) with variant, size, href.
-- **resolveIcon** — Resolves icon from name (e.g. `span.icon` or URL).
-- **setupLinkClickHandler** — Handles link clicks, emits `xe-sites-event` for host delegation.
-
-## Developing
-
-1. **Install dependencies:**
-   ```sh
-   npm install
-   ```
-
-2. **Build the bundle:**
-   ```sh
-   npm run build
-   ```
-   Produces `dist/da-xe-surfaces.js`. `prebuild` runs automatically first (generates xe-components from `package.json`). To override mappings, create `xe-components.config.cjs` (see [xe-components config](#xe-components-config)).
-
-3. **Start the local server:**
-   ```sh
-   aem up
-   ```
-   Requires the [Helix CLI](https://github.com/adobe/helix-cli): `sudo npm install -g @adobe/aem-cli`. Opens browser at `http://localhost:3000`.
-
-After making changes, run `npm run build` again to rebuild.
-
-**When package.json or xe-components.config.cjs changes** (e.g. adding `@spectrum-web-components/*`), any dev pulling the update must run `npm install` and `npm run build` to regenerate xe-components.
-
-## Building
-
-```sh
+```bash
+npm install
 npm run build
 ```
 
-Produces `dist/da-xe-surfaces.js` (and source map). Entry: `bundle-entry.js` → `define-patch.js` → `init.js` → `scripts/scripts.js`.
+Output: **`dist/da-xe-surfaces.js`** (and source map). This bundle includes the `<xe-sites>` custom element, full-page script logic, S2 styles, and block React components. Use it from head.html or from a host app (e.g. Nest).
 
-### xe-components config
+---
 
-xe-components are **auto-detected** from `package.json`: any `@spectrum-web-components/*` dependency becomes an `xe-*` wrapper (e.g. `@spectrum-web-components/button` → `xe-button`). No config file needed.
+## Running with head.html (full-page mode)
 
-To override or customize, create `xe-components.config.cjs`:
+head.html is the entry page when the **whole page** is driven by da-xe-surfaces (e.g. Milo/AEM or a standalone preview).
 
-```js
-module.exports = {
-  'sp-theme': { package: '@spectrum-web-components/theme', export: 'Theme' },
-  'sp-button': { package: '@spectrum-web-components/button', export: 'Button' },
-};
+### 1. What head.html does
+
+- Sets `window.app.BUILD_MODE = 'dynamic'` and loads the bundle as a module.
+- When the bundle runs, it calls `loadPage(document)`: it resolves the **current URL path** to a `.plain.html` URL (e.g. `/` → `/index.plain.html`, `/foo` → `/foo.plain.html`), fetches that HTML, parses it into segments, and renders a single `<xe-sites path="..." theme="...">` into `main` or `body`. So the **path** is derived from `window.location.pathname`.
+
+### 2. Run locally
+
+1. **Build** the bundle:
+   ```bash
+   npm run build
+   ```
+
+2. **Serve** the repo so that:
+   - The document you open is `head.html` (or a page that uses the same script setup).
+   - The script can load `/dist/da-xe-surfaces.js` from the same origin.
+   - The server can respond to requests for `.plain.html` (e.g. `/index.plain.html`, `/some-path.plain.html`) with the corresponding plain HTML content.
+
+   **Option A – Static server + same directory**
+
+   - Put an `index.plain.html` (and any other `*.plain.html`) in the repo root or a path that matches the URL structure.
+   - Serve the repo (e.g. `npx serve . -p 3000` or `python3 -m http.server 3000`).
+   - Open `http://localhost:3000/head.html` (or configure the server so that the default document is `head.html` for `/`).
+   - For the root path, the script will request `/index.plain.html`; ensure that URL returns valid block markup.
+
+   **Option B – Milo/AEM (e.g. `aem up`)**
+
+   - Use your usual Milo/AEM setup so that:
+     - The site is served with the correct document root.
+     - `head.html` (or equivalent) is the page that sets `BUILD_MODE = 'dynamic'` and loads `dist/da-xe-surfaces.js`.
+     - Paths resolve to the right `.plain.html` documents (e.g. via AEM or a proxy).
+
+3. **Theme** – The script reads theme from URL: `?theme=dark` or `#theme=dark` (default `light`).
+
+### 3. Where changes show up
+
+- **Code/block/UI changes:** Edit source in `init.js`, `ui/`, `blocks/react/`, `util/`, etc. Run **`npm run build`** again. Refresh the page that loads `dist/da-xe-surfaces.js`; the new bundle is loaded and changes appear on next load.
+- **Content changes:** Change the **plain HTML** that is served for each path (e.g. `index.plain.html` or your AEM/Milo content). Reload the page (or re-open the path); the script re-fetches the `.plain.html` and re-renders. No rebuild needed for content-only changes.
+- **head.html itself:** If you change `head.html` (e.g. script path or BUILD_MODE), refresh after saving; no build step for that file.
+
+---
+
+## Integrating xe-sites in an app (e.g. Nest)
+
+Use the **same** `dist/da-xe-surfaces.js` bundle. The host app loads it and mounts the custom element; xe-sites fetches the given path as `.plain.html` and renders inside the element. The host listens for `xe-sites-event` to handle navigation, analytics, and errors.
+
+### 1. Load the bundle
+
+Load the script once (e.g. when the host view mounts). Example (Nest/Boost-style):
+
+- **Development:** Point at your local build, e.g. `http://localhost:3000/dist/da-xe-surfaces.js` (serve da-xe-surfaces on 3000 and run the app so it can load that URL).
+- **Production:** Point at a deployed bundle URL (e.g. from your CDN or AEM branch).
+
+Example with dynamic import:
+
+```javascript
+const XE_SITES_SCRIPT_URL = 'http://localhost:3000/dist/da-xe-surfaces.js'; // or your deployed URL
+import(/* webpackIgnore: true */ XE_SITES_SCRIPT_URL)
+  .then(() => setXeSitesReady(true))
+  .catch((err) => console.error('Failed to load xe-sites', err));
 ```
 
-Set `autoDetect: true` to ignore manual entries and use package.json only.
+This registers the `<xe-sites>` custom element globally.
 
-## Testing
+### 2. Render the element
 
-```sh
-npm run test
-```
-
-or:
-
-```sh
-npm run test:watch
-```
-
-## Using xe-sites in another repo (e.g. Nest)
-
-The `<xe-sites>` web component loads and renders a fragment (`.plain.html`) inside a Spectrum-themed container.
-
-### Script URL (recommended for Nest)
-
-Load the bundle dynamically:
-
-```js
-import(/* webpackIgnore: true */ 'https://your-cdn/da-xe-surfaces.js').then(() => {
-  // xe-sites is now defined
-});
-```
-
-Then render:
+When the script has loaded, render the custom element with a **path** (URL or path to the fragment) and **theme**:
 
 ```html
-<xe-sites path="/path/to/fragment.plain.html" theme="dark"></xe-sites>
+<xe-sites path="https://example.com/fragments/panel.plain.html" theme="light"></xe-sites>
 ```
 
-### npm dependency (when using a bundler)
+Or in React (JSX), with a type for the custom element:
 
-```bash
-npm install @adobecom/da-xe-surfaces
-# Or from Git:
-npm install git+https://github.com/adobecom/da-xe-surfaces.git
+```tsx
+{xeSitesReady && (
+  <xe-sites
+    path={url}
+    theme={theme === 'light' ? 'light' : 'dark'}
+  />
+)}
 ```
 
-**Peer dependencies** (versions aligned with Nest):
+- **path** – Full URL to a `.plain.html` document, or a path that your backend serves as plain HTML (e.g. `/fragments/panel.plain.html`). xe-sites will fetch it and parse/render the blocks.
+- **theme** – `light` or `dark`; applied to the S2 Provider and context.
 
-```bash
-npm install lit@^2.7.3 @spectrum-web-components/theme@0.47.2 @spectrum-web-components/button@0.47.2
-```
+### 3. Listen for events
 
-**In your app:**
+xe-sites dispatches **`xe-sites-event`** (bubbling, composed). Listen on a container that includes the element:
 
-```js
-import '@adobecom/da-xe-surfaces';
-```
-
-**Props:**
-
-| Prop | Type | Description |
-|------|------|-------------|
-| `path` | string | Fragment URL (relative or absolute) |
-| `theme` | `'light' \| 'dark'` | Overrides URL theme when set (e.g. from Boost) |
-| `scale` | `'medium' \| 'large'` | xe-theme scale. Default `medium`. |
-| `themeSystem` | `'spectrum' \| 'spectrum-two'` | Default `spectrum-two`. |
-| `environment` | `'stage' \| 'prod'` | For URL resolution. |
-| `host` | `'cch' \| 'ccd'` | Host app type. |
-
-Package `main` is `init.js`. The consuming app's bundler must resolve Lit, Spectrum components, and CSS.
-
-### Cross-origin fragment proxy
-
-When the fragment URL is on another origin, set a proxy before loading the script:
-
-```js
-window.xeSitesFragmentProxy = 'https://your-backend-proxy/?url=';
-// Or a function:
-window.xeSitesFragmentProxy = (url) => 'https://your-proxy/?url=' + encodeURIComponent(url);
-```
-
-### Events
-
-Listen for `xe-sites-event`:
-
-```js
-element.addEventListener('xe-sites-event', (e) => {
-  const { type, subType, data } = e.detail;
-  // type: 'system' | 'link' | ...
-  // subType: 'loaded' | 'error' | 'loading' | ...
+```javascript
+container.addEventListener('xe-sites-event', (ev) => {
+  const { type, subType, data } = ev.detail || {};
+  if (type === 'system') {
+    if (subType === 'loaded') {
+      // data: { contentId, contentName }
+    }
+    if (subType === 'loading') { /* show loading */ }
+    if (subType === 'error') {
+      // data: { message }
+    }
+  }
+  if (type === 'navigation' || type === 'analytics') {
+    // Handle link/CTA: open URL, send analytics, etc.
+  }
 });
 ```
 
-## Typography
+See **Event contract** below (and `docs/REACT_BLOCKS_MIGRATION.md`) for full payload shapes.
 
-Uses Spectrum tokens with Milo-aligned sizes. Heading/body presets: `.heading-xxxl` … `.heading-xxs`, `.body-xxl` … `.body-xxs`. See `styles/styles.css`.
+### 4. Nest (Boost) example
 
-Block spacing: `.blockspacingtop-*` / `.blockspacingbottom-*` (xxxs | xxs | xs | s | m | l | xl | xxl | xxxl | 4xl | 5xl).
+- **Constants:** Define the script URL (e.g. `XE_SITES_SCRIPT_URL`) and the default plain HTML URL (e.g. `DEFAULT_PLAIN_HTML_URL`).
+- **Load:** In the Boost view, `import(/* webpackIgnore: true */ XE_SITES_SCRIPT_URL)` in a `useEffect` and set a state (e.g. `xeSitesReady`) when the import resolves.
+- **Render:** In the same view, render `<xe-sites path={url} theme={…} />` when `xeSitesReady` is true, where `url` comes from context or defaults to `DEFAULT_PLAIN_HTML_URL`.
+- **Events:** Attach an `xe-sites-event` listener (e.g. on the dialog/container ref) and delegate to your handler (e.g. BoostEventHandler) for loading, loaded, error, navigation, and analytics.
 
-## Linting
+### 5. Where changes show up (embedded)
 
-```sh
-npm run lint        # ESLint + Stylelint
-npm run lint:js     # ESLint only
-npm run lint:css    # Stylelint only
-```
+- **da-xe-surfaces code:** Change source in da-xe-surfaces, run **`npm run build`** in that repo. If the app points at the local bundle (e.g. `http://localhost:3000/dist/da-xe-surfaces.js`), refresh the app page to load the new bundle; changes appear on next load. If the app uses a deployed URL, deploy the new `dist/da-xe-surfaces.js` and refresh.
+- **Host app code:** Change the Nest (or other host) app as usual; rebuild/refresh the host. No need to rebuild da-xe-surfaces unless you changed it.
+- **Content:** Change the plain HTML served at the `path` URL. Reload or re-open the flow; xe-sites will fetch the updated HTML and re-render. No rebuild of either repo for content-only changes.
 
-## Security
+---
 
-1. Create a Service Now ID for your project via [Service Registry Portal](https://adobe.service-now.com/service_registry_portal.do#/search)
-2. Update `.kodiak/config.yaml` so valid team members are assigned security vulnerability Jira tickets.
+## How changes appear (summary)
+
+| What you change | Where it appears | What you do |
+|-----------------|------------------|-------------|
+| Block components, init, styles, scripts in **da-xe-surfaces** | head.html and any app that loads the bundle | `npm run build` in da-xe-surfaces, then refresh the page that loads the bundle |
+| **head.html** or page that sets BUILD_MODE and loads the script | Full-page mode only | Edit file, refresh; no build |
+| **Plain HTML** content (e.g. index.plain.html or AEM content) | Both head.html and embedded | Edit content / republish; refresh or re-open the path |
+| **Host app** (e.g. Nest) – views, event handlers, script URL | Embedded only | Build/refresh the host app |
+
+---
+
+## Event contract
+
+All events use the name **`xe-sites-event`** and a `detail` object: `{ type, subType?, data? }`.
+
+| type     | subType   | data | Purpose |
+|----------|-----------|------|--------|
+| `system` | `loading` | –    | Fragment fetch started |
+| `system` | `loaded`  | `{ contentId?, contentName? }` | Fragment rendered; from page-metadata |
+| `system` | `error`   | `{ message }` | Fetch or render failed |
+| `navigation` | –     | `{ href, openInNewTab?, contentId? }` | Link/CTA clicked; host should navigate or open URL |
+| `analytics`  | `track` | `{ eventType, subtype, contentAction?, … }` | Analytics event for host to send |
+
+The host should listen on a parent of `<xe-sites>` and handle these so that navigation, analytics, and error handling are consistent with the rest of the app.
+
+---
+
+## Block types
+
+Parsed from plain HTML (Milo-style sections and `div.<block-name>`).
+
+| Block | Rendered | Notes |
+|-------|----------|--------|
+| **text** | Yes | Headings, body, lists; size/accents via classes |
+| **row-card** | Yes | Card with optional image, CTA, S2 styling |
+| **adobetv** | Yes | Video embed (video.tv.adobe.com or .mp4); play analytics |
+| **page-metadata** | No | Key-value (e.g. style, analyticsParams); drives theme and loaded payload |
+| **html** | Yes | Raw HTML segments in a wrapper |
+
+---
+
+## Repo layout (main)
+
+| Path | Role |
+|------|------|
+| **init.js** | Lit custom element `<xe-sites>`, font loading, fragment fetch, parse → React render |
+| **bundle-entry.js** | Entry for release bundle: init + scripts/scripts.js |
+| **scripts/scripts.js** | Full-page: `loadPage()`, runs when `BUILD_MODE === 'dynamic'` |
+| **head.html** | Sample page: sets BUILD_MODE, loads dist/da-xe-surfaces.js |
+| **ui/BlockContainer.jsx** | S2 Provider + segment → TextBlock, RowCardBlock, AdobeTvBlock, html |
+| **util/parsePlainHtml.js** | HTML → segments (blocks, metadata, raw html) |
+| **context/xeSitesContext.js** | Theme, baseUrl, pageMetadata, event dispatch |
+| **styles/** | Typography and layout; PostCSS prefixwrap for `.xe-sites-blocks` |
+| **scripts/no-s2-scaling-loader.cjs** | Webpack loader: strip S2 touch scaling (same behavior as Nest) |
+
+---
+
+## Scripts
+
+| Command | Description |
+|---------|-------------|
+| `npm run build` | Webpack production build → `dist/da-xe-surfaces.js` |
+| `npm run lint` | ESLint + Stylelint |
+| `npm test` | Run tests |
+
+---
+
+## Fonts
+
+Fonts use the same approach as Nest: Typekit script `bwx4ctj` and `Typekit.load()`. If a Typekit script is already on the page (e.g. in Nest), da-xe-surfaces does not inject another and relies on the host’s fonts. S2 and blocks expect Adobe Clean.
+
+---
+
+For Nest integration details and event payloads, see **docs/REACT_BLOCKS_MIGRATION.md**.

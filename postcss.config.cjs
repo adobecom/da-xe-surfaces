@@ -1,10 +1,9 @@
 /**
- * PostCSS config for xe-sites: wrap all selectors with `.xe-sites` so styles
- * are scoped to the custom element and do not leak into the host (or get
- * overridden by host styles).
+ * PostCSS config: wrap all selectors with `.xe-sites-blocks` so styles apply
+ * in both xe-sites (fragment) and head.html (dynamic) modes.
  */
 module.exports = {
   plugins: [
-    require('postcss-prefixwrap')('xe-sites'),
+    require('postcss-prefixwrap')('.xe-sites-blocks'),
   ],
 };

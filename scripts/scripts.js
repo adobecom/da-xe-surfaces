@@ -1,8 +1,11 @@
-import { loadArea, setConfig } from '../utils/utils.js';
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import { setConfig } from '../utils/utils.js';
+import xeSitesContext from '../context/xeSitesContext.js';
+import { XE_SITES_TAG } from '../init.js';
 
 /**
  * Resolves theme (light | dark) from URL, defaulting to light.
- * Supports: ?theme=dark | ?theme=light, or #theme=dark in hash.
  */
 function getThemeFromUrl() {
   const params = new URLSearchParams(window.location.search);
@@ -15,46 +18,58 @@ function getThemeFromUrl() {
 }
 
 /**
- * Wraps the whole page in sp-theme so Spectrum tokens apply everywhere.
+ * Build .plain.html URL for current page (same format as xe-sites fragment fetch).
+ * Root path "/" or "" maps to /index.plain.html per Franklin/AEM convention.
  */
-async function wrapPageInSpTheme() {
-  await customElements.whenDefined('sp-theme');
-  const themeEl = document.createElement('sp-theme');
-  themeEl.setAttribute('system', 'spectrum-two');
-  themeEl.setAttribute('scale', 'medium');
-  themeEl.setAttribute('color', getThemeFromUrl());
-  const main = document.querySelector('main');
-  main.style.backgroundColor = 'var(--spectrum-background-color-default, var(--spectrum-gray-50, #fff))';
-  main.style.color = 'var(--spectrum-content-color-default, var(--spectrum-gray-900, #2d2d2d))';
-  while (document.body.firstChild) {
-    themeEl.appendChild(document.body.firstChild);
-  }
-  document.body.appendChild(themeEl);
+function getPlainHtmlPath() {
+  const { pathname } = window.location;
+  if (pathname.endsWith('.plain.html')) return pathname;
+  const trimmed = pathname.replace(/\.html?$/i, '').replace(/\/$/, '') || '';
+  const base = trimmed === '' ? '/index' : trimmed;
+  return `${base}.plain.html`;
 }
-
-/**
- * Loads everything needed to get to LCP.
- * @param {Element} doc The container element
- */
-async function loadEager(doc) {
-  const main = doc.querySelector('main');
-  if (main) {
-    await loadArea(main);
-  }
-}
-
-const config = {
-  contentRoot: '/',
-  codeRoot: '/',
-  miloLibs: window.location.origin,
-};
 
 export default async function loadPage(el) {
+  const config = {
+    contentRoot: '/',
+    codeRoot: '/',
+    miloLibs: window.location.origin,
+  };
   setConfig(config);
-  await wrapPageInSpTheme();
-  await loadEager(el);
+
+  let container = el?.querySelector('main');
+  if (!container) {
+    container = el?.querySelector('body') || document.body;
+  }
+  if (!container) return;
+
+  const theme = getThemeFromUrl();
+  const path = getPlainHtmlPath();
+
+  xeSitesContext.setTheme(theme);
+  xeSitesContext.setBaseUrl(window.location.href);
+  xeSitesContext.setDispatchEvent((target, detail) => {
+    target.dispatchEvent(new CustomEvent('xe-sites-event', {
+      bubbles: true,
+      composed: true,
+      detail,
+    }));
+  });
+
+  container.innerHTML = '';
+
+  const root = ReactDOM.createRoot(container);
+  root.render(React.createElement(XE_SITES_TAG, { path, theme }));
+}
+
+function runWhenReady() {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => loadPage(document));
+  } else {
+    loadPage(document);
+  }
 }
 
 if (window.app && window.app.BUILD_MODE === 'dynamic') {
-  loadPage(document);
+  runWhenReady();
 }

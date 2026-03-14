@@ -41,16 +41,16 @@ export function decorateText({ target, text = '', tag = 'span', className = 'tex
   return el;
 }
 
-/** Preset keys that map to .{key} classes in styles.css (e.g. .heading-xl, .body-m). Use Font block or decorateFont() anywhere. */
+/** Preset keys that map to .{key} classes in styles.css (e.g. .heading-xl, .body-m).
+ * Use Font block or decorateFont() anywhere. */
 export const FONT_PRESET_KEYS = new Set([
-  'heading-xxxl', 'heading-xxl', 'heading-xl', 'heading-l', 'heading-m', 'heading-s', 'heading-xs', 'heading-xxs',
-  'title-xl',
-  'body-xxxl', 'body-xxl', 'body-xl', 'body-l', 'body-m', 'body-s', 'body-xs',
-  'detail-l', 'detail-m', 'detail-s',
+  'heading-xl', 'heading-lg', 'heading-m', 'heading-sm', 'heading-xs',
+  'title-xl', 'title-lg', 'title-m', 'title-s', 'title-xs',
+  'body-xl', 'body-lg', 'body-m', 'body-sm', 'body-xs',
 ]);
 
 export function decorateButton({
-  target, key, descriptor, href, variant, size, treatment, staticColor, ariaLabel, contentId, contentName,
+  target, key, descriptor, href, variant, size, treatment, staticColor, ariaLabel, contentId,
 }) {
   const button = createTag('sp-button', {
     variant: variant ?? 'primary',
@@ -68,9 +68,6 @@ export function decorateButton({
   if (contentId) {
     button.setAttribute('data-content-id', contentId);
   }
-  if (contentName) {
-    button.setAttribute('data-content-name', contentName);
-  }
   button.textContent = descriptor?.value ?? '';
   target.appendChild(button);
 }
@@ -81,7 +78,7 @@ export function getBlockSize(el, defaultSize = 1) {
   return sizes.find((size) => el.classList.contains(size)) || sizes[defaultSize];
 }
 
-export function decorateBlockText(el, config = ['m', 's', 'm'], type = null) {
+export function decorateBlockText(el, config = ['m', 'sm', 'm'], type = null) {
   if (!el.classList.contains('default')) {
     let headings = el?.querySelectorAll('h1, h2, h3, h4, h5, h6');
     if (headings) {
@@ -115,7 +112,7 @@ function applyTextOverrides(el, override, targetEl) {
   });
 }
 
-export function decorateTextOverrides(el, options = ['-heading', '-body', '-detail'], target = false) {
+export function decorateTextOverrides(el, options = ['-heading', '-body', '-detail', '-title'], target = false) {
   const overrides = [...el.classList]
     .filter((elClass) => options.findIndex((ovClass) => elClass.endsWith(ovClass)) >= 0);
   if (!overrides.length) return;
