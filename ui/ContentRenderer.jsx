@@ -87,14 +87,12 @@ function renderContent(
       if (tag === 'a') {
         const href = attrs?.href ?? '#';
         const ariaLabel = attrs?.ariaLabel;
-        const openInNewTab = attrs?.openInNewTab === true;
         const contentId = attrs?.contentId;
         return (
           <a
             key={key}
             href={href}
             {...(ariaLabel && { 'aria-label': ariaLabel })}
-            {...(openInNewTab && { 'data-open-in-new-tab': 'true' })}
             {...(contentId && { 'data-content-id': contentId })}
           >
             {childNodes}

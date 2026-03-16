@@ -200,12 +200,11 @@ function elementToInlineNodes(el, baseUrl = '') {
       const resolved = baseUrl && rawHref && !/^[a-z][a-z0-9+.-]*:/i.test(rawHref)
         ? resolveUrl(rawHref, baseUrl)
         : rawHref;
-      const { url: cleanUrl, contentId: parsedContentId, openInNewTab } = extractHrefAndContentId(resolved);
+      const { url: cleanUrl, contentId: parsedContentId } = extractHrefAndContentId(resolved);
       const className = getClassName(child);
       const { text: linkText, ariaLabel } = getTextAndAriaLabel(child);
       const attrs = { href: cleanUrl || resolved };
       if (ariaLabel) attrs.ariaLabel = ariaLabel;
-      if (openInNewTab) attrs.openInNewTab = true;
       const contentId = child.getAttribute('data-content-id') || parsedContentId;
       if (contentId) attrs.contentId = contentId;
       let anchorChildren = elementToInlineNodes(child, baseUrl);
