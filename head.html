@@ -7,6 +7,17 @@
     window.process = window.process || { env: {} };
     if (typeof globalThis !== 'undefined') globalThis.process = window.process;
 </script>
+<!-- When HLX/AEM loads scripts as ESM (e.g. scripts/scripts.js), bare "react" must resolve. The bundle (dist/da-xe-surfaces.js) inlines React; this import map fixes raw ESM on preview. -->
+<script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@18.3.1",
+    "react-dom": "https://esm.sh/react-dom@18.3.1",
+    "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
+    "react/jsx-runtime": "https://esm.sh/react@18.3.1/jsx-runtime"
+  }
+}
+</script>
 <link rel="stylesheet" href="/styles/styles.css"/>
 <script type="module" src="/dist/da-xe-surfaces.js"></script>
 <link rel="icon" href="data:,">
