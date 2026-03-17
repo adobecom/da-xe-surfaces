@@ -48,13 +48,6 @@ export default async function loadPage(el) {
 
   xeSitesContext.setTheme(theme);
   xeSitesContext.setBaseUrl(window.location.href);
-  xeSitesContext.setDispatchEvent((target, detail) => {
-    target.dispatchEvent(new CustomEvent('xe-sites-event', {
-      bubbles: true,
-      composed: true,
-      detail,
-    }));
-  });
 
   container.innerHTML = '';
 
