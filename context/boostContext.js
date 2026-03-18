@@ -1,28 +1,28 @@
 /**
- * Lightweight context for xe-sites blocks (standalone or embedded in Nest).
- * When embedded, host listens for xe-sites-event and delegates; blocks call
- * onLinkClick/onButtonClick. Event contract (must match Nest): xe-sites-event
+ * Lightweight context for boost blocks (standalone or embedded in Nest).
+ * When embedded, host listens for boost-event and delegates; blocks call
+ * onLinkClick/onButtonClick. Event contract (must match Nest): boost-event
  * detail shapes for loaded, error, loading, analytics, navigation.
  * See docs/REACT_BLOCKS_MIGRATION.md.
  */
-const XE_SITES_EVENT = 'xe-sites-event';
+const BOOST_EVENT = 'boost-event';
 
-const xeSitesContext = {
+const boostContext = {
   theme: 'light',
+  env: '',
+  stageDomainsMap: {},
   baseUrl: '',
   pageMetadata: {},
   analyticsParams: {}, // page-metadata: name, id, subcategory, subtype
   onLinkClick: null,
   onButtonClick: null,
-  /** Set by xe-sites: (container, detail) => dispatch CustomEvent. */
+  /** Set by boost: (container, detail) => dispatch CustomEvent. */
   dispatchEvent: null,
-  /** Fragment container for event dispatch. Set by xe-sites before rendering. */
+  /** Fragment container for event dispatch. Set by boost before rendering. */
   container: null,
 
   setTheme(theme) {
     this.theme = theme;
-    const scheme = (theme && theme.trim()) || 'light';
-    document.documentElement.setAttribute('data-color-scheme', scheme);
   },
 
   setBaseUrl(url) {
@@ -61,7 +61,7 @@ const xeSitesContext = {
     this.container = el;
   },
 
-  /** Emit xe-sites-event. Blocks call for link/button clicks. Uses this.container if no arg. */
+  /** Emit boost-event. Blocks call for link/button clicks. Uses this.container if no arg. */
   emit(container, detail) {
     const target = container ?? this.container;
     if (this.dispatchEvent && target) {
@@ -69,14 +69,14 @@ const xeSitesContext = {
     }
   },
 
-  setOnLinkClick(fn) {
-    this.onLinkClick = fn;
+  setEnv(env) {
+    this.env = env;
   },
 
-  setOnButtonClick(fn) {
-    this.onButtonClick = fn;
+  setStageDomainsMap(stageDomainsMap) {
+    this.stageDomainsMap = stageDomainsMap;
   },
 };
 
-export default xeSitesContext;
-export { XE_SITES_EVENT };
+export default boostContext;
+export { BOOST_EVENT };

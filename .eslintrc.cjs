@@ -39,14 +39,14 @@ module.exports = {
       },
     },
     {
-      files: ['util/fetchMedia.js'],
+      files: ['utils/fetchMedia.js'],
       rules: {
         'no-await-in-loop': 'off',
         'import/prefer-default-export': 'off',
       },
     },
     {
-      files: ['util/parsePlainHtml.js'],
+      files: ['utils/parsePlainHtml.js'],
       rules: {
         'max-len': ['warn', { code: 130, ignoreUrls: true, ignoreStrings: true }],
         'no-plusplus': 'off',
@@ -64,7 +64,7 @@ module.exports = {
       rules: { 'import/no-extraneous-dependencies': 'off' },
     },
     {
-      files: ['blocks/react/**/*.jsx', 'ui/**/*.jsx'],
+      files: ['blocks/**/*.jsx', 'components/**/*.jsx', 'ui/**/*.jsx'],
       extends: ['plugin:react/recommended'],
       rules: {
         'react/jsx-uses-react': 'off',

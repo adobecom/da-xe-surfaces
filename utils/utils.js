@@ -1,7 +1,9 @@
+import boostContext from '../context/boostContext.js';
+
 /**
- * Single custom event for all xe-sites events. Host uses one listener; detail shape: { type, subType, data? }.
+ * Single custom event for all boost events. Host uses one listener; detail shape: { type, subType, data? }.
  */
-export const XE_SITES_EVENT = 'xe-sites-event';
+export const BOOST_EVENT = 'boost-event';
 
 function getClickedCta(e) {
   const t = e?.target;
@@ -19,12 +21,25 @@ function getClickedCta(e) {
   return null;
 }
 
+function convertToStageLinks(url) {
+  const { stageDomainsMap } = boostContext;
+  if (!stageDomainsMap || typeof stageDomainsMap !== 'object') return url;
+  let result = url;
+  for (const [prodDomain, stageDomain] of Object.entries(stageDomainsMap)) {
+    if (result.includes(prodDomain)) {
+      result = result.replace(prodDomain, stageDomain);
+      break;
+    }
+  }
+  return result;
+}
+
 /** Parse "url | contentId" and #_blank; used for links and CTAs. */
 export function extractHrefAndContentId(href) {
   const parts = decodeURIComponent(href).split(' | ');
   const url = parts[0]?.trim() || '';
   return {
-    url,
+    url: boostContext.env === 'prod' ? url : convertToStageLinks(url),
     contentId: parts.length > 1 ? parts[1]?.trim() : '',
   };
 }
@@ -32,15 +47,15 @@ export function extractHrefAndContentId(href) {
 /**
  * Emit CTA click events (analytics + navigation).
  */
-export function emitCtaClick(container, options) {
-  if (!container || !options?.href || options.href === '#') return;
-  const parsed = extractHrefAndContentId(options.href);
+export function emitCtaClick(container, href) {
+  if (!container || !href || href === '#') return;
+  const parsed = extractHrefAndContentId(href);
   const { url, contentId: parsedContentId } = parsed;
-  const contentId = options.contentId != null ? options.contentId : parsedContentId;
+  const contentId = parsedContentId;
   const navHref = url;
 
-  if (contentId || url) {
-    container.dispatchEvent(new CustomEvent(XE_SITES_EVENT, {
+  if (contentId || href) {
+    container.dispatchEvent(new CustomEvent(BOOST_EVENT, {
       bubbles: true,
       composed: true,
       detail: {
@@ -50,7 +65,7 @@ export function emitCtaClick(container, options) {
       },
     }));
   }
-  container.dispatchEvent(new CustomEvent(XE_SITES_EVENT, {
+  container.dispatchEvent(new CustomEvent(BOOST_EVENT, {
     bubbles: true,
     composed: true,
     detail: { type: 'navigation', subType: 'url', data: { href: navHref } },

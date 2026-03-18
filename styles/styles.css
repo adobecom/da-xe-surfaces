@@ -3,8 +3,8 @@ body {
   /* -webkit-font-smoothing: antialiased; */
 }
 
-/* Top-level selectors: postcss-prefixwrap adds one .xe-sites-blocks. Nesting under .xe-sites-blocks would double-prefix and break matching + animation. */
-.xe-sites-loader {
+/* Top-level selectors: postcss-prefixwrap adds one .boost-blocks. Nesting under .boost-blocks would double-prefix and break matching + animation. */
+.boost-loader {
   position: fixed;
   inset: 0;
   z-index: 9999;
@@ -14,22 +14,22 @@ body {
   background-color: #f5f5f5;
 }
 
-.xe-sites-loader-spinner {
+.boost-loader-spinner {
   width: 32px;
   height: 32px;
   border: 3px solid #e5e5e5;
   border-top-color: #0d66d0;
   border-radius: 50%;
-  animation: xe-sites-loader-spin 0.8s linear infinite;
+  animation: boost-loader-spin 0.8s linear infinite;
 }
 
-@keyframes xe-sites-loader-spin {
+@keyframes boost-loader-spin {
   to {
     transform: rotate(360deg);
   }
 }
 
-.xe-sites-blocks {
+.boost-blocks {
   /* Spacing: calc(rem * var(--s2-scale)) – from page.css */
   --spectrum-spacing-50: calc(0.125rem * var(--s2-scale, 1));
   --spectrum-spacing-100: calc(0.25rem * var(--s2-scale, 1));

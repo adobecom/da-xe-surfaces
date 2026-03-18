@@ -1,15 +1,15 @@
 /**
  * Adobe TV block: iframe for video.tv.adobe.com or .mp4.
- * Sends video play analytics via xe-sites-event.
+ * Sends video play analytics via boost-event.
  */
 import { useEffect, useRef } from 'react';
 import { style } from '@react-spectrum/s2/style' with { type: 'macro' };
-import xeSitesContext from '../context/xeSitesContext.js';
+import boostContext from '../context/boostContext.js';
 
 const ADOBE_TV_ORIGIN = 'https://video.tv.adobe.com';
 
 function sendVideoPlayAnalytics(block) {
-  const { container, dispatchEvent } = xeSitesContext;
+  const { container, dispatchEvent } = boostContext;
   if (dispatchEvent && container) {
     dispatchEvent(container, {
       type: 'analytics',

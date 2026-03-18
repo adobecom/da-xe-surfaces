@@ -3,7 +3,7 @@
 Website foundation for rendering content blocks from **plain HTML** (Franklin/AEM-style). Runs in two modes:
 
 - **head.html (full-page)** – Script drives the whole page: fetches the current path as `.plain.html`, parses it, and renders blocks into `main` or `body`.
-- **Embedded (e.g. Nest)** – Host app loads the bundle and mounts the `<xe-sites>` custom element with a `path` and `theme`; xe-sites fetches that path as `.plain.html` and renders inside the element. Events are dispatched for the host to handle navigation, analytics, and errors.
+- **Embedded (e.g. Nest)** – Host app loads the bundle and mounts the `<boost-content>` custom element with a `path` and `theme`; the element fetches that path as `.plain.html` and renders inside it. Events are dispatched as `boost-event` for the host to handle navigation, analytics, and errors.
 
 One build (`dist/da-xe-surfaces.js`) is used for both. Content is expected as Milo-style block markup (sections with `div.<block-name>`). Blocks are rendered with React and Spectrum 2 (S2).
 
@@ -16,7 +16,7 @@ npm install
 npm run build
 ```
 
-Output: **`dist/da-xe-surfaces.js`** (and source map). This bundle includes the `<xe-sites>` custom element, full-page script logic, S2 styles, and block React components. Use it from head.html or from a host app (e.g. Nest).
+Output: **`dist/da-xe-surfaces.js`** (and source map). This bundle includes the `<boost-content>` custom element, full-page script logic, S2 styles, and block React components. Use it from head.html or from a host app (e.g. Nest).
 
 ---
 
@@ -27,7 +27,7 @@ head.html is the entry page when the **whole page** is driven by da-xe-surfaces 
 ### 1. What head.html does
 
 - Sets `window.app.BUILD_MODE = 'dynamic'` and loads the bundle as a module.
-- When the bundle runs, it calls `loadPage(document)`: it resolves the **current URL path** to a `.plain.html` URL (e.g. `/` → `/index.plain.html`, `/foo` → `/foo.plain.html`), fetches that HTML, parses it into segments, and renders a single `<xe-sites path="..." theme="...">` into `main` or `body`. So the **path** is derived from `window.location.pathname`.
+- When the bundle runs, it calls `loadPage(document)`: it resolves the **current URL path** to a `.plain.html` URL (e.g. `/` → `/index.plain.html`, `/foo` → `/foo.plain.html`), fetches that HTML, parses it into segments, and renders a single `<boost-content path="..." theme="...">` into `main` or `body`. So the **path** is derived from `window.location.pathname`.
 
 ### 2. Run locally
 
@@ -59,15 +59,15 @@ head.html is the entry page when the **whole page** is driven by da-xe-surfaces 
 
 ### 3. Where changes show up
 
-- **Code/block/UI changes:** Edit source in `init.js`, `ui/`, `blocks/react/`, `util/`, etc. Run **`npm run build`** again. Refresh the page that loads `dist/da-xe-surfaces.js`; the new bundle is loaded and changes appear on next load.
+- **Code/block/UI changes:** Edit source in `init.js`, `blocks/`, `components/`, `utils/`, etc. Run **`npm run build`** again. Refresh the page that loads `dist/da-xe-surfaces.js`; the new bundle is loaded and changes appear on next load.
 - **Content changes:** Change the **plain HTML** that is served for each path (e.g. `index.plain.html` or your AEM/Milo content). Reload the page (or re-open the path); the script re-fetches the `.plain.html` and re-renders. No rebuild needed for content-only changes.
 - **head.html itself:** If you change `head.html` (e.g. script path or BUILD_MODE), refresh after saving; no build step for that file.
 
 ---
 
-## Integrating xe-sites in an app (e.g. Nest)
+## Integrating in an app (e.g. Nest)
 
-Use the **same** `dist/da-xe-surfaces.js` bundle. The host app loads it and mounts the custom element; xe-sites fetches the given path as `.plain.html` and renders inside the element. The host listens for `xe-sites-event` to handle navigation, analytics, and errors.
+Use the **same** `dist/da-xe-surfaces.js` bundle. The host app loads it and mounts the custom element; the element fetches the given path as `.plain.html` and renders inside it. The host listens for **`boost-event`** to handle navigation, analytics, and errors.
 
 ### 1. Load the bundle
 
@@ -79,42 +79,36 @@ Load the script once (e.g. when the host view mounts). Example (Nest/Boost-style
 Example with dynamic import:
 
 ```javascript
-const XE_SITES_SCRIPT_URL = 'http://localhost:3000/dist/da-xe-surfaces.js'; // or your deployed URL
-import(/* webpackIgnore: true */ XE_SITES_SCRIPT_URL)
-  .then(() => setXeSitesReady(true))
-  .catch((err) => console.error('Failed to load xe-sites', err));
+const BOOST_SCRIPT_URL = 'http://localhost:3000/dist/da-xe-surfaces.js'; // or your deployed URL
+import(/* webpackIgnore: true */ BOOST_SCRIPT_URL)
+  .then(() => setBoostReady(true))
+  .catch((err) => console.error('Failed to load boost-content bundle', err));
 ```
 
-This registers the `<xe-sites>` custom element globally.
+This registers the **`<boost-content>`** custom element globally. (The tag name must include a hyphen per Custom Elements spec.)
 
 ### 2. Render the element
 
-When the script has loaded, render the custom element with a **path** (URL or path to the fragment) and **theme**:
+When the script has loaded, create the custom element with a **path** (URL or path to the fragment) and **theme**. Because React does not set object/function props on custom elements, create the element imperatively and set `path`, `theme`, and `getConfig` (or `config`) before appending:
 
-```html
-<xe-sites path="https://example.com/fragments/panel.plain.html" theme="light"></xe-sites>
+```javascript
+const el = document.createElement('boost-content');
+el.path = url;
+el.theme = theme === 'light' ? 'light' : 'dark';
+el.getConfig = () => ({ stageDomainsMap }); // optional: for stage URL mapping
+container.appendChild(el);
 ```
 
-Or in React (JSX), with a type for the custom element:
-
-```tsx
-{xeSitesReady && (
-  <xe-sites
-    path={url}
-    theme={theme === 'light' ? 'light' : 'dark'}
-  />
-)}
-```
-
-- **path** – Full URL to a `.plain.html` document, or a path that your backend serves as plain HTML (e.g. `/fragments/panel.plain.html`). xe-sites will fetch it and parse/render the blocks.
+- **path** – Full URL to a `.plain.html` document, or a path that your backend serves as plain HTML (e.g. `/fragments/panel.plain.html`). The element will fetch it and parse/render the blocks.
 - **theme** – `light` or `dark`; applied to the S2 Provider and context.
+- **getConfig** – Optional callback returning `{ stageDomainsMap? }` for non-prod stage domain mapping.
 
 ### 3. Listen for events
 
-xe-sites dispatches **`xe-sites-event`** (bubbling, composed). Listen on a container that includes the element:
+The element dispatches **`boost-event`** (bubbling, composed). Listen on a container that includes the element:
 
 ```javascript
-container.addEventListener('xe-sites-event', (ev) => {
+container.addEventListener('boost-event', (ev) => {
   const { type, subType, data } = ev.detail || {};
   if (type === 'system') {
     if (subType === 'loaded') {
@@ -135,16 +129,16 @@ See **Event contract** below (and `docs/REACT_BLOCKS_MIGRATION.md`) for full pay
 
 ### 4. Nest (Boost) example
 
-- **Constants:** Define the script URL (e.g. `XE_SITES_SCRIPT_URL`) and the default plain HTML URL (e.g. `DEFAULT_PLAIN_HTML_URL`).
-- **Load:** In the Boost view, `import(/* webpackIgnore: true */ XE_SITES_SCRIPT_URL)` in a `useEffect` and set a state (e.g. `xeSitesReady`) when the import resolves.
-- **Render:** In the same view, render `<xe-sites path={url} theme={…} />` when `xeSitesReady` is true, where `url` comes from context or defaults to `DEFAULT_PLAIN_HTML_URL`.
-- **Events:** Attach an `xe-sites-event` listener (e.g. on the dialog/container ref) and delegate to your handler (e.g. BoostEventHandler) for loading, loaded, error, navigation, and analytics.
+- **Constants:** Define the script URL (e.g. `BOOST_SCRIPT_URL` or `BOOST_SCRIPT_URL`) and the default plain HTML URL (e.g. `DEFAULT_PLAIN_HTML_URL`).
+- **Load:** In the Boost view, `import(/* webpackIgnore: true */ BOOST_SCRIPT_URL)` in a `useEffect` and set a state (e.g. `boostReady`) when the import resolves.
+- **Render:** Use a container ref and in an effect create `boost-content` with `document.createElement('boost-content')`, set `path`, `theme`, and `getConfig`, then append to the container. On url/theme change, update the element’s properties; on unmount, remove the element.
+- **Events:** Attach a `boost-event` listener (e.g. on the dialog/container ref) and delegate to your handler (e.g. BoostEventHandler) for loading, loaded, error, navigation, and analytics.
 
 ### 5. Where changes show up (embedded)
 
 - **da-xe-surfaces code:** Change source in da-xe-surfaces, run **`npm run build`** in that repo. If the app points at the local bundle (e.g. `http://localhost:3000/dist/da-xe-surfaces.js`), refresh the app page to load the new bundle; changes appear on next load. If the app uses a deployed URL, deploy the new `dist/da-xe-surfaces.js` and refresh.
 - **Host app code:** Change the Nest (or other host) app as usual; rebuild/refresh the host. No need to rebuild da-xe-surfaces unless you changed it.
-- **Content:** Change the plain HTML served at the `path` URL. Reload or re-open the flow; xe-sites will fetch the updated HTML and re-render. No rebuild of either repo for content-only changes.
+- **Content:** Change the plain HTML served at the `path` URL. Reload or re-open the flow; the element will fetch the updated HTML and re-render. No rebuild of either repo for content-only changes.
 
 ---
 
@@ -161,7 +155,7 @@ See **Event contract** below (and `docs/REACT_BLOCKS_MIGRATION.md`) for full pay
 
 ## Event contract
 
-All events use the name **`xe-sites-event`** and a `detail` object: `{ type, subType?, data? }`.
+All events use the name **`boost-event`** and a `detail` object: `{ type, subType?, data? }`.
 
 | type     | subType   | data | Purpose |
 |----------|-----------|------|--------|
@@ -171,7 +165,7 @@ All events use the name **`xe-sites-event`** and a `detail` object: `{ type, sub
 | `navigation` | –     | `{ href, openInNewTab?, contentId? }` | Link/CTA clicked; host should navigate or open URL |
 | `analytics`  | `track` | `{ eventType, subtype, contentAction?, … }` | Analytics event for host to send |
 
-The host should listen on a parent of `<xe-sites>` and handle these so that navigation, analytics, and error handling are consistent with the rest of the app.
+The host should listen on a parent of `<boost-content>` and handle these so that navigation, analytics, and error handling are consistent with the rest of the app.
 
 ---
 
@@ -193,14 +187,14 @@ Parsed from plain HTML (Milo-style sections and `div.<block-name>`).
 
 | Path | Role |
 |------|------|
-| **init.js** | Lit custom element `<xe-sites>`, font loading, fragment fetch, parse → React render |
+| **init.js** | Lit custom element `<boost-content>`, font loading, fragment fetch, parse → React render |
 | **bundle-entry.js** | Entry for release bundle: init + scripts/scripts.js |
 | **scripts/scripts.js** | Full-page: `loadPage()`, runs when `BUILD_MODE === 'dynamic'` |
 | **head.html** | Sample page: sets BUILD_MODE, loads dist/da-xe-surfaces.js |
-| **ui/BlockContainer.jsx** | S2 Provider + segment → TextBlock, RowCardBlock, AdobeTvBlock, html |
-| **util/parsePlainHtml.js** | HTML → segments (blocks, metadata, raw html) |
-| **context/xeSitesContext.js** | Theme, baseUrl, pageMetadata, event dispatch |
-| **styles/** | Typography and layout; PostCSS prefixwrap for `.xe-sites-blocks` |
+| **components/BlockContainer.jsx** | S2 Provider + segment → TextBlock, RowCardBlock, AdobeTvBlock, html |
+| **utils/parsePlainHtml.js** | HTML → segments (blocks, metadata, raw html) |
+| **context/boostContext.js** | Theme, baseUrl, pageMetadata, event dispatch |
+| **styles/** | Typography and layout; PostCSS prefixwrap for `.boost-blocks` |
 | **scripts/no-s2-scaling-loader.cjs** | Webpack loader: strip S2 touch scaling (same behavior as Nest) |
 
 ---

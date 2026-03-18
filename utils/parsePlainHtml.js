@@ -17,7 +17,7 @@
  * Parse plain HTML to segments (Milo-style blocks + raw HTML).
  * Reference: nest applets/boost util/parsePlainHtml.ts (poc-blocks-in-nest)
  */
-import xeSitesContext from '../context/xeSitesContext.js';
+import boostContext from '../context/boostContext.js';
 import { extractHrefAndContentId } from './utils.js';
 import getTextOverrides from './textBlockLogic.js';
 
@@ -566,7 +566,7 @@ function processPageMetadataBlock(blockEl) {
       data.analyticsParams = rawValue;
     }
   }
-  xeSitesContext.setPageMetadata(data);
+  boostContext.setPageMetadata(data);
 }
 
 /**
@@ -649,7 +649,7 @@ function processNode(node, blockRoots, run, segments, doc, baseUrl) {
  * preview-metadata and preview-block are not shown or processed.
  */
 export function parseDocumentToSegments(doc, baseUrl = '') {
-  xeSitesContext.setPageMetadata({});
+  boostContext.setPageMetadata({});
 
   const roots = findBlockRoots(doc);
   const blockRoots = new Set(roots);

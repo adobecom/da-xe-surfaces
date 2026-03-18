@@ -3,7 +3,7 @@
  */
 import { Provider } from '@react-spectrum/s2';
 import ReactDOM from 'react-dom/client';
-import xeSitesContext from '../context/xeSitesContext.js';
+import boostContext from '../context/boostContext.js';
 import { parseHtmlToContentNodes } from '../utils/parsePlainHtml.js';
 import ContentRenderer from './ContentRenderer.jsx';
 import TextBlock from '../blocks/Text.jsx';
@@ -18,8 +18,9 @@ function getBlockClassName(type, blockClasses = []) {
 
 function BlockForSegment({ segment }) {
   if (segment.type === 'html') {
-    const baseUrl = xeSitesContext.baseUrl || '';
+    const baseUrl = boostContext.baseUrl || '';
     const nodes = parseHtmlToContentNodes(segment.html, baseUrl);
+    if (!ContentRenderer) return null;
     return (
       <div className={getBlockClassName('html')}>
         <ContentRenderer nodes={nodes} />
@@ -32,11 +33,11 @@ function BlockForSegment({ segment }) {
   const blockClasses = block.blockClasses ?? [];
   let content = null;
   if (blockType === 'text' || blockType === 'html') {
-    content = <TextBlock block={block} />;
+    content = TextBlock ? <TextBlock block={block} /> : null;
   } else if (blockType === 'rowcard') {
-    content = <RowCardBlock block={block} />;
+    content = RowCardBlock ? <RowCardBlock block={block} /> : null;
   } else if (blockType === 'adobetv') {
-    content = <AdobeTvBlock block={block} />;
+    content = AdobeTvBlock ? <AdobeTvBlock block={block} /> : null;
   }
   if (content) {
     return (
@@ -54,7 +55,7 @@ export default function renderSegmentsToContainer(container, segments, theme) {
   const root = ReactDOM.createRoot(container);
   root.render(
   <Provider colorScheme={colorScheme}>
-    <div className="xe-sites-blocks" data-color-scheme={colorScheme}>
+    <div className="boost-blocks" data-color-scheme={colorScheme}>
       {segments.map((seg, i) => (
         <BlockForSegment key={i} segment={seg} theme={colorScheme} />
       ))}

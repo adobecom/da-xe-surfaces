@@ -1,8 +1,8 @@
 import { LitElement, html } from 'lit';
-import { customFetch, XE_SITES_EVENT, setupCtaClickHandler } from './utils/utils.js';
+import { customFetch, BOOST_EVENT, setupCtaClickHandler } from './utils/utils.js';
 import { parseHtmlToSegments } from './utils/parsePlainHtml.js';
 import renderSegmentsToContainer from './components/BlockContainer.jsx';
-import xeSitesContext from './context/xeSitesContext.js';
+import boostContext from './context/boostContext.js';
 import '@react-spectrum/s2/page.css';
 import './styles/typography.css';
 import './styles/styles.css';
@@ -50,14 +50,34 @@ if (!hasTypekitScript) {
 window.app = window.app || {};
 window.app.BUILD_MODE = window.app.BUILD_MODE || 'builtin';
 
-export const XE_SITES_TAG = 'xe-sites';
+export const BOOST_TAG = 'boost-content';
 
-const LOADER_HTML = '<div class="xe-sites-loader" role="status" aria-label="Loading"><div class="xe-sites-loader-spinner"></div></div>';
+const LOADER_HTML = '<div class="boost-loader" role="status" aria-label="Loading"><div class="boost-loader-spinner"></div></div>';
 
-export default class XeSites extends LitElement {
+/** Resolve stageDomainsMap from host config (config: { stageDomainsMap }). */
+function getStageDomainsMap(config) {
+  if (!config?.stageDomainsMap || typeof config.stageDomainsMap !== 'object' || Array.isArray(config.stageDomainsMap)) return {};
+  return config.stageDomainsMap;
+}
+
+/** Get config from host: getConfig callback or config property (set via ref in React 18). */
+function resolveHostConfig(el) {
+  if (typeof el.getConfig === 'function') {
+    try {
+      return el.getConfig() || {};
+    } catch {
+      return {};
+    }
+  }
+  return el.config && typeof el.config === 'object' ? el.config : {};
+}
+
+export default class Boost extends LitElement {
   static properties = {
     path: { type: String },
     theme: { type: String, reflect: true },
+    /** Host config object (fallback if getConfig not set). Set via ref in React 18. */
+    config: { type: Object },
   };
 
   createRenderRoot() {
@@ -67,34 +87,51 @@ export default class XeSites extends LitElement {
   constructor() {
     super();
     this.path = '';
-    this.loadError = '';
     this.theme = '';
     this.env = '';
-    this.host = '';
     this.config = {};
+  }
+
+  connectedCallback() {
+    super.connectedCallback();
+    const hostConfig = resolveHostConfig(this);
+    const map = getStageDomainsMap(hostConfig);
+    if (Object.keys(map).length) {
+      boostContext.setStageDomainsMap(map);
+    }
   }
 
   async firstUpdated() {
     if (this.theme) {
-      xeSitesContext.setTheme((this.theme && this.theme.trim()) || 'light');
+      boostContext.setTheme((this.theme && this.theme.trim()) || 'light');
     }
     if (this.path) {
       await this.loadFragment(this.path);
     }
-    
+
+    if (this.env) {
+      boostContext.setEnv(this.env);
+    }
+    const hostConfig = resolveHostConfig(this);
+    if (Object.keys(hostConfig).length) {
+      boostContext.setStageDomainsMap(getStageDomainsMap(hostConfig));
+    }
   }
 
   updated(changedProperties) {
     if (changedProperties.has('theme')) {
-      xeSitesContext.setTheme((this.theme && this.theme.trim()) || 'light');
+      boostContext.setTheme((this.theme && this.theme.trim()) || 'light');
     }
     if (changedProperties.has('path') && this.hasUpdated) {
       this.loadFragment(this.path);
     }
+    const hostConfig = resolveHostConfig(this);
+    if (Object.keys(hostConfig).length) {
+      boostContext.setStageDomainsMap(getStageDomainsMap(hostConfig));
+    }
   }
 
   async loadFragment(url) {
-    this.loadError = '';
     if (!url || !url.trim()) {
       this.clearFragmentContent();
       return;
@@ -107,7 +144,7 @@ export default class XeSites extends LitElement {
     const fragmentContainer = this.querySelector('#fragment-container');
     if (fragmentContainer) {
       fragmentContainer.innerHTML = LOADER_HTML;
-      fragmentContainer.dispatchEvent(new CustomEvent(XE_SITES_EVENT, {
+      fragmentContainer.dispatchEvent(new CustomEvent(BOOST_EVENT, {
         bubbles: true,
         composed: true,
         detail: { type: 'system', subType: 'loading' },
@@ -121,12 +158,11 @@ export default class XeSites extends LitElement {
       const fragmentPath = trimmed.endsWith('.plain.html')
         ? trimmed
         : `${trimmed.replace(/\.html?$/i, '')}.plain.html`;
-      const { pathname } = new URL(fragmentPath, window.location.origin);
       const absUrl = /^https?:\/\//i.test(fragmentPath)
         ? fragmentPath
         : new URL(fragmentPath, window.location.origin).toString();
       const isCrossOrigin = new URL(absUrl).origin !== window.location.origin;
-      const proxy = window.xeSitesFragmentProxy;
+      const proxy = window.boostFragmentProxy;
       const resolveUrl = (proxy && isCrossOrigin)
         ? (targetUrl) => (typeof proxy === 'function' ? proxy(targetUrl) : proxy + encodeURIComponent(targetUrl))
         : undefined;
@@ -158,11 +194,11 @@ export default class XeSites extends LitElement {
       if (!container) return;
 
       const theme = (this.theme && this.theme.trim()) || 'light';
-      xeSitesContext.setTheme(theme);
-      xeSitesContext.setBaseUrl(absUrl);
-      xeSitesContext.setContainer(container);
-      xeSitesContext.setDispatchEvent((target, detail) => {
-        target.dispatchEvent(new CustomEvent(XE_SITES_EVENT, {
+      boostContext.setTheme(theme);
+      boostContext.setBaseUrl(absUrl);
+      boostContext.setContainer(container);
+      boostContext.setDispatchEvent((target, detail) => {
+        target.dispatchEvent(new CustomEvent(BOOST_EVENT, {
           bubbles: true,
           composed: true,
           detail,
@@ -171,13 +207,13 @@ export default class XeSites extends LitElement {
       setupCtaClickHandler(container);
 
       const reactRoot = document.createElement('div');
-      reactRoot.className = 'xe-sites-react-root';
+      reactRoot.className = 'boost-react-root';
       container.appendChild(reactRoot);
       renderSegmentsToContainer(reactRoot, segments, theme);
 
-      const contentId = xeSitesContext.getContentId();
-      const contentName = xeSitesContext.getContentName();
-      container.dispatchEvent(new CustomEvent(XE_SITES_EVENT, {
+      const contentId = boostContext.getContentId();
+      const contentName = boostContext.getContentName();
+      container.dispatchEvent(new CustomEvent(BOOST_EVENT, {
         bubbles: true,
         composed: true,
         detail: {
@@ -188,18 +224,17 @@ export default class XeSites extends LitElement {
       }));
     } catch (error) {
       if (loadId !== this.fragmentRequestId) return;
-      this.loadError = error instanceof Error ? error.message : String(error);
       this.clearFragmentContent();
       const container = this.querySelector('#fragment-container');
       if (container) {
-        container.dispatchEvent(new CustomEvent(XE_SITES_EVENT, {
+        container.dispatchEvent(new CustomEvent(BOOST_EVENT, {
           bubbles: true,
           composed: true,
-          detail: { type: 'system', subType: 'error', data: { message: this.loadError } },
+          detail: { type: 'system', subType: 'error' },
         }));
       }
       // eslint-disable-next-line no-console -- fragment load failure
-      console.error('xe-sites: Error loading fragment:', error);
+      console.error('boost: Error loading fragment:', error);
     }
   }
 
@@ -210,14 +245,12 @@ export default class XeSites extends LitElement {
     }
   }
 
+  /* eslint-disable-next-line class-methods-use-this -- Lit render() returns template */
   render() {
-    if (this.loadError) {
-      return html`<p role="alert">Failed to load fragment: ${this.loadError}</p>`;
-    }
     return html`
-      <div id="fragment-container" class="xe-sites-blocks" style="display: block; height: 100%; min-height: 0;"></div>
+      <div id="fragment-container" class="boost-blocks" style="display: block; height: 100%; min-height: 0;"></div>
     `;
   }
 }
 
-customElements.define(XE_SITES_TAG, XeSites);
+customElements.define(BOOST_TAG, Boost);

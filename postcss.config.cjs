@@ -1,9 +1,9 @@
 /**
- * PostCSS config: wrap all selectors with `.xe-sites-blocks` so styles apply
- * in both xe-sites (fragment) and head.html (dynamic) modes.
+ * PostCSS config: wrap all selectors with `.boost-blocks` so styles apply
+ * in both boost-content (fragment) and head.html (dynamic) modes.
  */
 module.exports = {
   plugins: [
-    require('postcss-prefixwrap')('.xe-sites-blocks'),
+    require('postcss-prefixwrap')('.boost-blocks'),
   ],
 };

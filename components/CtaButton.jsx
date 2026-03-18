@@ -1,11 +1,26 @@
+/** ***********************************************************************
+ *
+ * Copyright 2026 Adobe
+ * All Rights Reserved.
+ *
+ * NOTICE: All information contained herein is, and remains
+ * the property of Adobe and its suppliers, if any. The intellectual
+ * and technical concepts contained herein are proprietary to Adobe
+ * and its suppliers and are protected by all applicable intellectual
+ * property laws, including trade secret and copyright laws.
+ * Dissemination of this information or reproduction of this material
+ * is strictly forbidden unless prior written permission is obtained
+ * from Adobe.
+ ************************************************************************* */
+
 /**
  * Wraps React Spectrum Button and emits CTA click events (analytics + navigation)
  * in the same format as setupCtaClickHandler. Use for any block CTA that should
- * trigger xe-sites-event.
+ * trigger boost-event.
  */
 import { useCallback } from 'react';
 import { Button } from '@react-spectrum/s2';
-import xeSitesContext from '../context/xeSitesContext.js';
+import boostContext from '../context/boostContext.js';
 import { emitCtaClick } from '../utils/utils.js';
 
 export default function CtaButton({
@@ -15,9 +30,9 @@ export default function CtaButton({
   ...buttonProps
 }) {
   const onPress = useCallback(() => {
-    const { container } = xeSitesContext;
+    const { container } = boostContext;
     if (!container || !href) return;
-    emitCtaClick(container, { href, contentId });
+    emitCtaClick(container, href);
   }, [href, contentId]);
 
   if (!href || href === '#') return null;

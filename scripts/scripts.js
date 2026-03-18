@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import xeSitesContext from '../context/xeSitesContext.js';
-import { XE_SITES_TAG } from '../init.js';
+import boostContext from '../context/boostContext.js';
+import { BOOST_TAG } from '../init.js';
 
 /**
  * Resolves theme (light | dark) from URL, defaulting to light.
@@ -17,7 +17,7 @@ function getThemeFromUrl() {
 }
 
 /**
- * Build .plain.html URL for current page (same format as xe-sites fragment fetch).
+ * Build .plain.html URL for current page (same format as boost fragment fetch).
  * Root path "/" or "" maps to /index.plain.html per Franklin/AEM convention.
  */
 function getPlainHtmlPath() {
@@ -38,13 +38,13 @@ export default async function loadPage(el) {
   const theme = getThemeFromUrl();
   const path = getPlainHtmlPath();
 
-  xeSitesContext.setTheme(theme);
-  xeSitesContext.setBaseUrl(window.location.href);
+  boostContext.setTheme(theme);
+  boostContext.setBaseUrl(window.location.href);
 
   container.innerHTML = '';
 
   const root = ReactDOM.createRoot(container);
-  root.render(React.createElement(XE_SITES_TAG, { path, theme }));
+  root.render(React.createElement(BOOST_TAG, { path, theme }));
 }
 
 function runWhenReady() {

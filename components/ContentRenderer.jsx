@@ -1,6 +1,6 @@
 /**
  * Renders content tree (from parsePlainHtml) using styles.css typography classes.
- * Link clicks emit xe-sites-event via xeSitesContext.
+ * Link clicks emit boost-event via boostContext.
  */
 import { style } from '@react-spectrum/s2/style' with { type: 'macro' };
 
