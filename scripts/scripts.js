@@ -1,6 +1,5 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { setConfig } from '../utils/utils.js';
 import xeSitesContext from '../context/xeSitesContext.js';
 import { XE_SITES_TAG } from '../init.js';
 
@@ -30,13 +29,6 @@ function getPlainHtmlPath() {
 }
 
 export default async function loadPage(el) {
-  const config = {
-    contentRoot: '/',
-    codeRoot: '/',
-    miloLibs: window.location.origin,
-  };
-  setConfig(config);
-
   let container = el?.querySelector('main');
   if (!container) {
     container = el?.querySelector('body') || document.body;

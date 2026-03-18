@@ -5,8 +5,8 @@
 import { useCallback, useEffect, useLayoutEffect, useState } from 'react';
 import { Text } from '@react-spectrum/s2';
 import { style } from '@react-spectrum/s2/style' with { type: 'macro' };
-import { fetchMediaAsBlobUrl } from '../util/fetchMedia.js';
-import CtaButton from './CtaButton.jsx';
+import { fetchMediaAsBlobUrl } from '../utils/fetchMedia.js';
+import CtaButton from '../components/CtaButton.jsx';
 
 function getBlockOptions(blockClasses, prefix) {
   const pre = prefix.toLowerCase();

@@ -1,4 +1,4 @@
-import ContentRenderer from './ContentRenderer.jsx';
+import ContentRenderer from '../components/ContentRenderer.jsx';
 
 /**
  * Text block: renders rows of content using ContentRenderer.

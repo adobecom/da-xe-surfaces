@@ -18,7 +18,7 @@
  * Reference: nest applets/boost util/parsePlainHtml.ts (poc-blocks-in-nest)
  */
 import xeSitesContext from '../context/xeSitesContext.js';
-import { extractHrefAndContentId } from '../utils/utils.js';
+import { extractHrefAndContentId } from './utils.js';
 import getTextOverrides from './textBlockLogic.js';
 
 /**

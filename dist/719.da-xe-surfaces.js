@@ -1,2 +1,0 @@
-"use strict";(self.webpackChunk_adobecom_da_xe_surfaces=self.webpackChunk_adobecom_da_xe_surfaces||[]).push([[719],{719(e,t,s){s.d(t,{setDialogAndElementAttributes:()=>a});const a=({element:e,title:t})=>{e&&t&&(e.title=t,e.closest(".dialog-modal")?.setAttribute("aria-label",t))}}}]);
-//# sourceMappingURL=719.da-xe-surfaces.js.map

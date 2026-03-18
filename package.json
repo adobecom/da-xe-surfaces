@@ -55,7 +55,7 @@
     "stylelint": "14.6.0",
     "stylelint-config-prettier": "9.0.3",
     "stylelint-config-standard": "25.0.0",
-    "unplugin-parcel-macros": "0.1.1",
+    "unplugin-parcel-macros": "^0.1.1",
     "url": "^0.11.4",
     "webpack": "^5.105.2",
     "webpack-cli": "^6.0.1"

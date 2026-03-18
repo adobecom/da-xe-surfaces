@@ -4,11 +4,11 @@
 import { Provider } from '@react-spectrum/s2';
 import ReactDOM from 'react-dom/client';
 import xeSitesContext from '../context/xeSitesContext.js';
-import { parseHtmlToContentNodes } from '../util/parsePlainHtml.js';
+import { parseHtmlToContentNodes } from '../utils/parsePlainHtml.js';
 import ContentRenderer from './ContentRenderer.jsx';
-import TextBlock from './TextBlock.jsx';
-import RowCardBlock from './RowCardBlock.jsx';
-import AdobeTvBlock from './AdobeTvBlock.jsx';
+import TextBlock from '../blocks/Text.jsx';
+import RowCardBlock from '../blocks/RowCard.jsx';
+import AdobeTvBlock from '../blocks/AdobeTv.jsx';
 
 function getBlockClassName(type, blockClasses = []) {
   const base = type ? `block block-${type}` : 'block';

@@ -1,7 +1,7 @@
 import { LitElement, html } from 'lit';
-import { setConfig, customFetch, XE_SITES_EVENT, setupCtaClickHandler } from './utils/utils.js';
-import { parseHtmlToSegments } from './util/parsePlainHtml.js';
-import renderSegmentsToContainer from './ui/BlockContainer.jsx';
+import { customFetch, XE_SITES_EVENT, setupCtaClickHandler } from './utils/utils.js';
+import { parseHtmlToSegments } from './utils/parsePlainHtml.js';
+import renderSegmentsToContainer from './components/BlockContainer.jsx';
 import xeSitesContext from './context/xeSitesContext.js';
 import '@react-spectrum/s2/page.css';
 import './styles/typography.css';
@@ -52,20 +52,12 @@ window.app.BUILD_MODE = window.app.BUILD_MODE || 'builtin';
 
 export const XE_SITES_TAG = 'xe-sites';
 
-function getConfigForPath(pathname) {
-  return {
-    contentRoot: '/',
-    codeRoot: '/',
-    libs: window.location.origin,
-    pathname: pathname || window.location.pathname,
-  };
-}
+const LOADER_HTML = '<div class="xe-sites-loader" role="status" aria-label="Loading"><div class="xe-sites-loader-spinner"></div></div>';
 
 export default class XeSites extends LitElement {
   static properties = {
     path: { type: String },
     theme: { type: String, reflect: true },
-    scale: { type: String, reflect: true },
   };
 
   createRenderRoot() {
@@ -77,9 +69,9 @@ export default class XeSites extends LitElement {
     this.path = '';
     this.loadError = '';
     this.theme = '';
-    this.scale = '';
-    this.environment = '';
+    this.env = '';
     this.host = '';
+    this.config = {};
   }
 
   async firstUpdated() {
@@ -89,6 +81,7 @@ export default class XeSites extends LitElement {
     if (this.path) {
       await this.loadFragment(this.path);
     }
+    
   }
 
   updated(changedProperties) {
@@ -113,7 +106,7 @@ export default class XeSites extends LitElement {
 
     const fragmentContainer = this.querySelector('#fragment-container');
     if (fragmentContainer) {
-      fragmentContainer.setAttribute('data-block-status', 'loading');
+      fragmentContainer.innerHTML = LOADER_HTML;
       fragmentContainer.dispatchEvent(new CustomEvent(XE_SITES_EVENT, {
         bubbles: true,
         composed: true,
@@ -129,14 +122,6 @@ export default class XeSites extends LitElement {
         ? trimmed
         : `${trimmed.replace(/\.html?$/i, '')}.plain.html`;
       const { pathname } = new URL(fragmentPath, window.location.origin);
-      const baseConfig = getConfigForPath(pathname);
-      const xeConfig = {
-        ...baseConfig,
-        ...(this.environment && { environment: this.environment }),
-        ...(this.host && { host: this.host }),
-      };
-      setConfig(xeConfig);
-
       const absUrl = /^https?:\/\//i.test(fragmentPath)
         ? fragmentPath
         : new URL(fragmentPath, window.location.origin).toString();
@@ -190,7 +175,6 @@ export default class XeSites extends LitElement {
       container.appendChild(reactRoot);
       renderSegmentsToContainer(reactRoot, segments, theme);
 
-      container.setAttribute('data-block-status', 'loaded');
       const contentId = xeSitesContext.getContentId();
       const contentName = xeSitesContext.getContentName();
       container.dispatchEvent(new CustomEvent(XE_SITES_EVENT, {
@@ -208,7 +192,6 @@ export default class XeSites extends LitElement {
       this.clearFragmentContent();
       const container = this.querySelector('#fragment-container');
       if (container) {
-        container.setAttribute('data-block-status', 'error');
         container.dispatchEvent(new CustomEvent(XE_SITES_EVENT, {
           bubbles: true,
           composed: true,
@@ -232,7 +215,7 @@ export default class XeSites extends LitElement {
       return html`<p role="alert">Failed to load fragment: ${this.loadError}</p>`;
     }
     return html`
-      <div id="fragment-container" class="xe-sites-blocks" data-block-status="pending" style="display: block; height: 100%; min-height: 0;"></div>
+      <div id="fragment-container" class="xe-sites-blocks" style="display: block; height: 100%; min-height: 0;"></div>
     `;
   }
 }
