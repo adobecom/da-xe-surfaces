@@ -89,19 +89,19 @@ This registers the **`<boost-content>`** custom element globally. (The tag name 
 
 ### 2. Render the element
 
-When the script has loaded, create the custom element with a **path** (URL or path to the fragment) and **theme**. Because React does not set object/function props on custom elements, create the element imperatively and set `path`, `theme`, and `getConfig` (or `config`) before appending:
+When the script has loaded, create the custom element with a **path** (URL or path to the fragment) and **theme**. Set properties on the element before appending (imperative embed is reliable for object props like `config`):
 
 ```javascript
 const el = document.createElement('boost-content');
 el.path = url;
 el.theme = theme === 'light' ? 'light' : 'dark';
-el.getConfig = () => ({ stageDomainsMap }); // optional: for stage URL mapping
+el.config = { stageDomainsMap }; // optional: non-prod stage domain mapping
 container.appendChild(el);
 ```
 
 - **path** – Full URL to a `.plain.html` document, or a path that your backend serves as plain HTML (e.g. `/fragments/panel.plain.html`). The element will fetch it and parse/render the blocks.
 - **theme** – `light` or `dark`; applied to the S2 Provider and context.
-- **getConfig** – Optional callback returning `{ stageDomainsMap? }` for non-prod stage domain mapping.
+- **config** – Optional `{ stageDomainsMap? }` for non-prod stage domain mapping.
 
 ### 3. Listen for events
 
@@ -131,7 +131,7 @@ See **Event contract** below (and `docs/REACT_BLOCKS_MIGRATION.md`) for full pay
 
 - **Constants:** Define the script URL (e.g. `BOOST_SCRIPT_URL` or `BOOST_SCRIPT_URL`) and the default plain HTML URL (e.g. `DEFAULT_PLAIN_HTML_URL`).
 - **Load:** In the Boost view, `import(/* webpackIgnore: true */ BOOST_SCRIPT_URL)` in a `useEffect` and set a state (e.g. `boostReady`) when the import resolves.
-- **Render:** Use a container ref and in an effect create `boost-content` with `document.createElement('boost-content')`, set `path`, `theme`, and `getConfig`, then append to the container. On url/theme change, update the element’s properties; on unmount, remove the element.
+- **Render:** Use a container ref and in an effect create `boost-content` with `document.createElement('boost-content')`, set `path`, `theme`, and `config` (if needed), then append. On url/theme change, update the element’s properties; on unmount, remove the element.
 - **Events:** Attach a `boost-event` listener (e.g. on the dialog/container ref) and delegate to your handler (e.g. BoostEventHandler) for loading, loaded, error, navigation, and analytics.
 
 ### 5. Where changes show up (embedded)

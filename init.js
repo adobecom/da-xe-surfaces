@@ -1,3 +1,19 @@
+/** ******************************************************************
+ * ADOBE CONFIDENTIAL
+ *
+ * Copyright 2026 Adobe
+ * All Rights Reserved.
+ *
+ * NOTICE:  All information contained herein is, and remains
+ * the property of Adobe and its suppliers, if any. The intellectual
+ * and technical concepts contained herein are proprietary to Adobe
+ * and its suppliers and are protected by all applicable intellectual
+ * property laws, including trade secret and copyright laws.
+ * Dissemination of this information or reproduction of this material
+ * is strictly forbidden unless prior written permission is obtained
+ * from Adobe.
+ ****************************************************************** */
+
 import { LitElement, html } from 'lit';
 import { customFetch, BOOST_EVENT, setupCtaClickHandler } from './utils/utils.js';
 import { parseHtmlToSegments } from './utils/parsePlainHtml.js';
@@ -60,15 +76,8 @@ function getStageDomainsMap(config) {
   return config.stageDomainsMap;
 }
 
-/** Get config from host: getConfig callback or config property (set via ref in React 18). */
+/** Host config: set `el.config = { stageDomainsMap }` before connect (imperative embed). */
 function resolveHostConfig(el) {
-  if (typeof el.getConfig === 'function') {
-    try {
-      return el.getConfig() || {};
-    } catch {
-      return {};
-    }
-  }
   return el.config && typeof el.config === 'object' ? el.config : {};
 }
 
@@ -76,7 +85,7 @@ export default class Boost extends LitElement {
   static properties = {
     path: { type: String },
     theme: { type: String, reflect: true },
-    /** Host config object (fallback if getConfig not set). Set via ref in React 18. */
+    /** Host config, e.g. `{ stageDomainsMap }`. Set on element before append. */
     config: { type: Object },
   };
 
