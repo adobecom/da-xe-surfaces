@@ -17,7 +17,7 @@
 module.exports = {
   root: true,
   extends: 'airbnb-base',
-  env: { browser: true, mocha: true },
+  env: { browser: true },
   parser: '@babel/eslint-parser',
   parserOptions: {
     allowImportExportEverywhere: true,
@@ -36,14 +36,8 @@ module.exports = {
       ExportDeclaration: { multiline: true, minProperties: 6 },
     }],
     'no-return-assign': ['error', 'except-parens'],
-    'no-unused-expressions': 0,
-    'chai-friendly/no-unused-expressions': 2,
   },
   overrides: [
-    {
-      files: ['test/**/*.js'],
-      rules: { 'no-console': 'off' },
-    },
     {
       files: ['utils/utils.js', 'scripts/scripts.js'],
       rules: {
@@ -72,15 +66,7 @@ module.exports = {
       },
     },
     {
-      files: ['utils/decorate.js'],
-      rules: { 'max-len': ['warn', { code: 120 }] },
-    },
-    {
-      files: ['web-test-runner.config.js'],
-      rules: { 'import/no-extraneous-dependencies': 'off' },
-    },
-    {
-      files: ['blocks/**/*.jsx', 'components/**/*.jsx', 'ui/**/*.jsx'],
+      files: ['blocks/**/*.jsx', 'components/**/*.jsx'],
       extends: ['plugin:react/recommended'],
       rules: {
         'react/jsx-uses-react': 'off',
@@ -90,9 +76,6 @@ module.exports = {
       },
     },
   ],
-  plugins: [
-    'chai-friendly',
-    'react',
-  ],
+  plugins: ['react'],
   settings: { react: { version: 'detect' } },
 };
