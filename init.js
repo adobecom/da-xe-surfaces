@@ -15,10 +15,10 @@
  ****************************************************************** */
 
 import { LitElement, html } from 'lit';
-import { customFetch, BOOST_EVENT, setupCtaClickHandler } from './utils/utils.js';
+import boostContext, { BOOST_EVENT } from './context/boostContext.js';
+import { customFetch, setupCtaClickHandler } from './utils/utils.js';
 import { parseHtmlToSegments } from './utils/parsePlainHtml.js';
 import renderSegmentsToContainer from './components/BlockContainer.jsx';
-import boostContext from './context/boostContext.js';
 import '@react-spectrum/s2/page.css';
 import './styles/typography.css';
 import './styles/styles.css';

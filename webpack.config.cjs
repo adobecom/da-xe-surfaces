@@ -1,4 +1,4 @@
-/********************************************************************
+/** ******************************************************************
  * ADOBE CONFIDENTIAL
  *
  * Copyright 2026 Adobe
@@ -12,11 +12,15 @@
  * Dissemination of this information or reproduction of this material
  * is strictly forbidden unless prior written permission is obtained
  * from Adobe.
- *******************************************************************/
+ ****************************************************************** */
 
 const path = require('path');
 const macros = require('unplugin-parcel-macros');
-const noS2ScalingLoader = path.resolve(__dirname, 'scripts/no-s2-scaling-loader.cjs');
+
+const noS2ScalingLoader = path.resolve(
+  __dirname,
+  'scripts/no-s2-scaling-loader.cjs',
+);
 
 module.exports = {
   entry: './bundle-entry.js',
@@ -24,7 +28,7 @@ module.exports = {
     path: path.resolve(__dirname, 'dist'),
     filename: 'da-xe-surfaces.js',
   },
-  devtool: 'source-map',
+  devtool: 'hidden-source-map',
   mode: 'production',
   optimization: {
     minimize: true,
@@ -39,7 +43,10 @@ module.exports = {
       },
       {
         test: /\.css$/,
-        include: [path.resolve(__dirname, 'blocks'), path.resolve(__dirname, 'styles')],
+        include: [
+          path.resolve(__dirname, 'blocks'),
+          path.resolve(__dirname, 'styles'),
+        ],
         exclude: path.resolve(__dirname, 'styles/typography.css'),
         use: ['style-loader', 'css-loader', noS2ScalingLoader, 'postcss-loader'],
       },
@@ -53,9 +60,7 @@ module.exports = {
         exclude: /node_modules/,
         use: {
           loader: 'babel-loader',
-          options: {
-            presets: [['@babel/preset-react', { runtime: 'automatic' }]],
-          },
+          options: { presets: [['@babel/preset-react', { runtime: 'automatic' }]] },
         },
       },
     ],

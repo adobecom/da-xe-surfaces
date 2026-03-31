@@ -66,6 +66,10 @@ module.exports = {
       },
     },
     {
+      files: ['webpack.config.cjs'],
+      rules: { 'import/no-extraneous-dependencies': 'off' },
+    },
+    {
       files: ['blocks/**/*.jsx', 'components/**/*.jsx'],
       extends: ['plugin:react/recommended'],
       rules: {

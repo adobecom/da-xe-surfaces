@@ -14,12 +14,7 @@
  * from Adobe.
  ****************************************************************** */
 
-import boostContext from '../context/boostContext.js';
-
-/**
- * Single custom event for all boost events. Host uses one listener; detail shape: { type, subType, data? }.
- */
-export const BOOST_EVENT = 'boost-event';
+import boostContext, { BOOST_EVENT } from '../context/boostContext.js';
 
 function getClickedCta(e) {
   const t = e?.target;
@@ -97,11 +92,11 @@ export function setupCtaClickHandler(container) {
   container.addEventListener('click', (e) => {
     const result = getClickedCta(e);
     if (!result) return;
-    const { href, contentId } = result;
+    const { href } = result;
     if (!href || href === '#') return;
     e.preventDefault();
     e.stopPropagation();
-    emitCtaClick(container, { href, ...(contentId && { contentId }) });
+    emitCtaClick(container, href);
   }, true);
 }
 
@@ -113,15 +108,19 @@ export function setupCtaClickHandler(container) {
  */
 export async function customFetch({ resource, withCacheRules, resolveUrl }) {
   const options = {};
+  let shouldBypassCache = false;
   if (withCacheRules) {
     const params = new URLSearchParams(window.location.search);
-    options.cache = params.get('cache') === 'off' ? 'reload' : 'default';
+    shouldBypassCache = params.get('cache') === 'off';
+    options.cache = shouldBypassCache ? 'reload' : 'default';
   }
 
   const baseUrl = /^https?:\/\//i.test(resource)
     ? new URL(resource)
     : new URL(resource, window.location.origin);
-  baseUrl.searchParams.set('cb', new Date().getTime());
+  if (shouldBypassCache) {
+    baseUrl.searchParams.set('cb', new Date().getTime());
+  }
   const fetchUrl = typeof resolveUrl === 'function' ? resolveUrl(baseUrl.toString()) : baseUrl.toString();
   const response = await fetch(fetchUrl, options);
   if (!resource.endsWith('.plain.html')) {

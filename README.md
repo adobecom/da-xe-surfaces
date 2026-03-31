@@ -122,7 +122,7 @@ Parsed from plain HTML (`div.<block-name>`, sections).
 | `components/BlockContainer.jsx` | S2 `Provider` + segment routing |
 | `components/ContentRenderer.jsx`, `CtaButton.jsx` | Block rendering / CTAs |
 | `blocks/*.jsx` | Text, RowCard, AdobeTv |
-| `utils/parsePlainHtml.js`, `utils/utils.js`, `textBlockLogic.js`, `fetchMedia.js`, `types.js` | Parsing, events (`BOOST_EVENT`), helpers |
+| `context/boostContext.js` (`BOOST_EVENT`), `utils/parsePlainHtml.js`, `utils/utils.js`, `textBlockLogic.js`, `fetchMedia.js`, `types.js` | Parsing, events, helpers |
 | `context/boostContext.js` | Theme, container, dispatch |
 | `styles/*.css` | Typography + app styles (prefix-wrapped in build) |
 | `postcss.config.mjs` | ESM PostCSS config: `postcss-prefixwrap('.boost-blocks')` |

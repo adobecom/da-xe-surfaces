@@ -36,7 +36,6 @@ function BlockForSegment({ segment }) {
   if (segment.type === 'html') {
     const baseUrl = boostContext.baseUrl || '';
     const nodes = parseHtmlToContentNodes(segment.html, baseUrl);
-    if (!ContentRenderer) return null;
     return (
       <div className={getBlockClassName('html')}>
         <ContentRenderer nodes={nodes} />
@@ -49,11 +48,11 @@ function BlockForSegment({ segment }) {
   const blockClasses = block.blockClasses ?? [];
   let content = null;
   if (blockType === 'text' || blockType === 'html') {
-    content = TextBlock ? <TextBlock block={block} /> : null;
+    content = <TextBlock block={block} />;
   } else if (blockType === 'rowcard') {
-    content = RowCardBlock ? <RowCardBlock block={block} /> : null;
+    content = <RowCardBlock block={block} />;
   } else if (blockType === 'adobetv') {
-    content = AdobeTvBlock ? <AdobeTvBlock block={block} /> : null;
+    content = <AdobeTvBlock block={block} />;
   }
   if (content) {
     return (
