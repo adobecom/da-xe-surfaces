@@ -103,22 +103,24 @@ export function setupCtaClickHandler(container) {
 /**
  * @param {Object} opts
  * @param {string} opts.resource - Fragment URL (relative or absolute)
- * @param {boolean} [opts.withCacheRules]
+ * @param {boolean} [opts.withCacheRules] - When true: use normal HTTP caching by default; only if the
+ *   **page** URL has `?cache=off`, bypass cache (reload + `cb` query) for dev refresh.
  * @param {(url: string) => string} [opts.resolveUrl] - Optional; return the URL to actually fetch (e.g. CORS proxy).
  */
 export async function customFetch({ resource, withCacheRules, resolveUrl }) {
   const options = {};
-  let shouldBypassCache = false;
+  /** True only when `withCacheRules` and `?cache=off` — opt-in cache bust; otherwise browser cache applies. */
+  let bypassCache = false;
   if (withCacheRules) {
     const params = new URLSearchParams(window.location.search);
-    shouldBypassCache = params.get('cache') === 'off';
-    options.cache = shouldBypassCache ? 'reload' : 'default';
+    bypassCache = params.get('cache') === 'off';
+    options.cache = bypassCache ? 'reload' : 'default';
   }
 
   const baseUrl = /^https?:\/\//i.test(resource)
     ? new URL(resource)
     : new URL(resource, window.location.origin);
-  if (shouldBypassCache) {
+  if (bypassCache) {
     baseUrl.searchParams.set('cb', new Date().getTime());
   }
   const fetchUrl = typeof resolveUrl === 'function' ? resolveUrl(baseUrl.toString()) : baseUrl.toString();
