@@ -26,6 +26,12 @@ module.exports = {
     babelOptions: { presets: ['@babel/preset-react'] },
   },
   rules: {
+    // react-dom/client is valid (package exports); resolver does not resolve it.
+    'import/no-unresolved': ['error', {
+      commonjs: true,
+      caseSensitive: true,
+      ignore: ['^react-dom/client$'],
+    }],
     'no-param-reassign': [2, { props: false }],
     'linebreak-style': ['error', 'unix'],
     'import/extensions': 'off',
