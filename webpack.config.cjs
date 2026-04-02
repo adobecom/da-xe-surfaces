@@ -28,7 +28,7 @@ module.exports = {
     path: path.resolve(__dirname, 'dist'),
     filename: 'da-xe-surfaces.js',
   },
-  devtool: 'source-map',
+  devtool: 'hidden-source-map',
   mode: 'production',
   optimization: {
     minimize: true,
