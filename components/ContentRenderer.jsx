@@ -128,7 +128,8 @@ function renderContent(
       const headingClass = node.typographyVariant === 'title'
         ? getTitleClassName(node.size)
         : getHeadingClassName(node.size);
-      return wrapWithClassDiv(content, headingClass);
+      const Tag = `h${node.level ?? 2}`;
+      return <Tag key={key} className={headingClass}>{content}</Tag>;
     }
     case 'detail': {
       const content = inline(node.children);
@@ -151,36 +152,24 @@ function renderContent(
         </>
       );
       if (node.className) {
-        const listProps = {
-          style: { margin: 0, paddingLeft: '1.5em' },
-          className: getBodyClassName(node.size),
-        };
         return node.ordered ? (
           <div key={key} className={node.className}>
-            <ol {...listProps}>{listContent}</ol>
+            <ol className={getBodyClassName(node.size)}>{listContent}</ol>
           </div>
         ) : (
           <div key={key} className={node.className}>
-            <ul {...listProps}>{listContent}</ul>
+            <ul className={getBodyClassName(node.size)}>{listContent}</ul>
           </div>
         );
       }
       return node.ordered ? (
-        <ol
-          key={key}
-          className={getBodyClassName(node.size)}
-          style={{ margin: 0, paddingLeft: '1.5em' }}
-        >
+        <ol key={key} className={getBodyClassName(node.size)}>
           {node.items.map((itemNodes, i) => (
             <li key={i}>{inline(itemNodes)}</li>
           ))}
         </ol>
       ) : (
-        <ul
-          key={key}
-          className={getBodyClassName(node.size)}
-          style={{ margin: 0, paddingLeft: '1.5em' }}
-        >
+        <ul key={key} className={getBodyClassName(node.size)}>
           {node.items.map((itemNodes, i) => (
             <li key={i}>{inline(itemNodes)}</li>
           ))}

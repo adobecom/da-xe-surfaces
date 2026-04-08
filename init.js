@@ -20,7 +20,6 @@ import { customFetch, setupCtaClickHandler } from './utils/utils.js';
 import { parseHtmlToSegments } from './utils/parsePlainHtml.js';
 import renderSegmentsToContainer from './components/BlockContainer.jsx';
 import '@react-spectrum/s2/page.css';
-import './styles/typography.css';
 import './styles/styles.css';
 
 // Load fonts via Nest's approach: Typekit script + Typekit.load() (same as Nest loadTypekitAsync).

@@ -19,6 +19,15 @@ body {
   /* -webkit-font-smoothing: antialiased; */
 }
 
+h1, h2, h3, h4, h5, h6 {
+  margin: 0;
+}
+
+ul, ol {
+  margin: 0;
+  padding-inline-start: 1.5em;
+}
+
 /* Top-level selectors: postcss-prefixwrap adds one .boost-blocks. Nesting under .boost-blocks would double-prefix and break matching + animation. */
 .boost-loader {
   position: fixed;

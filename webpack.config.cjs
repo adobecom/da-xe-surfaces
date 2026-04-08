@@ -28,7 +28,7 @@ module.exports = {
     path: path.resolve(__dirname, 'dist'),
     filename: 'da-xe-surfaces.js',
   },
-  devtool: 'hidden-source-map',
+  devtool: 'source-map',
   mode: 'production',
   optimization: {
     minimize: true,
@@ -38,16 +38,10 @@ module.exports = {
     rules: [
       {
         test: /\.css$/,
-        include: path.resolve(__dirname, 'styles/typography.css'),
-        use: ['style-loader', 'css-loader'],
-      },
-      {
-        test: /\.css$/,
         include: [
           path.resolve(__dirname, 'blocks'),
           path.resolve(__dirname, 'styles'),
         ],
-        exclude: path.resolve(__dirname, 'styles/typography.css'),
         use: ['style-loader', 'css-loader', noS2ScalingLoader, 'postcss-loader'],
       },
       {
