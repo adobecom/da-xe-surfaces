@@ -62,9 +62,6 @@ if (!hasTypekitScript) {
   document.head.appendChild(script);
 }
 
-window.app = window.app || {};
-window.app.BUILD_MODE = window.app.BUILD_MODE || 'builtin';
-
 export const BOOST_TAG = 'boost-content';
 
 const LOADER_HTML = '<div class="boost-loader" role="status" aria-label="Loading"><div class="boost-loader-spinner"></div></div>';
