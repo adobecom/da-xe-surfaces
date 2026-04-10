@@ -21,28 +21,28 @@
 
 /** Override format: class names ending with -heading, -body, -detail (e.g. xl-heading, m-body). */
 export default function getTextOverrides(classList) {
-  const options = ['-heading', '-body', '-detail', '-title'];
-  const overrides = { heading: undefined, body: undefined, detail: undefined, title: undefined };
-  Array.from(classList).forEach((cls) => {
-    const match = options.find((opt) => cls.endsWith(opt));
-    if (!match) {
-      return;
-    }
-    const parts = cls.split('-');
-    const type = parts[1]; // heading | body | detail
-    const size = parts[0]; // xl | m | s | ...
-    if (typeof size !== 'string') {
-      return;
-    }
-    if (type === 'heading') {
-      overrides.heading = size;
-    } else if (type === 'body') {
-      overrides.body = size;
-    } else if (type === 'detail') {
-      overrides.detail = size;
-    } else if (type === 'title') {
-      overrides.title = size;
-    }
-  });
-  return overrides;
+    const options = ['-heading', '-body', '-detail', '-title'];
+    const overrides = { heading: undefined, body: undefined, detail: undefined, title: undefined };
+    Array.from(classList).forEach((cls) => {
+        const match = options.find((opt) => cls.endsWith(opt));
+        if (!match) {
+            return;
+        }
+        const parts = cls.split('-');
+        const type = parts[1]; // heading | body | detail
+        const size = parts[0]; // xl | m | s | ...
+        if (typeof size !== 'string') {
+            return;
+        }
+        if (type === 'heading') {
+            overrides.heading = size;
+        } else if (type === 'body') {
+            overrides.body = size;
+        } else if (type === 'detail') {
+            overrides.detail = size;
+        } else if (type === 'title') {
+            overrides.title = size;
+        }
+    });
+    return overrides;
 }

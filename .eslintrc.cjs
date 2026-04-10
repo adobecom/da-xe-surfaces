@@ -26,6 +26,7 @@ module.exports = {
     babelOptions: { presets: ['@babel/preset-react'] },
   },
   rules: {
+    indent: ['error', 4, { SwitchCase: 1 }],
     // react-dom/client is valid (package exports); resolver does not resolve it.
     'import/no-unresolved': ['error', {
       commonjs: true,
@@ -55,14 +56,14 @@ module.exports = {
       },
     },
     {
-      files: ['utils/fetchMedia.js'],
+      files: ['utils/fetch-media.js'],
       rules: {
         'no-await-in-loop': 'off',
         'import/prefer-default-export': 'off',
       },
     },
     {
-      files: ['utils/parsePlainHtml.js'],
+      files: ['utils/parse-plain-html.js'],
       rules: {
         'max-len': ['warn', { code: 130, ignoreUrls: true, ignoreStrings: true }],
         'no-plusplus': 'off',
@@ -83,6 +84,8 @@ module.exports = {
         'react/react-in-jsx-scope': 'off',
         'react/prop-types': 'off',
         'import/extensions': 'off',
+        'react/jsx-indent': ['error', 4],
+        'react/jsx-indent-props': ['error', 4],
       },
     },
   ],

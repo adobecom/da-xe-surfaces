@@ -21,26 +21,26 @@
  */
 import { useCallback } from 'react';
 import { Button } from '@react-spectrum/s2';
-import boostContext from '../context/boostContext.js';
+import boostContext from '../context/boost-context.js';
 import { emitCtaClick } from '../utils/utils.js';
 
 export default function CtaButton({
-  href,
-  contentId,
-  children,
-  ...buttonProps
+    href,
+    contentId,
+    children,
+    ...buttonProps
 }) {
-  const onPress = useCallback(() => {
-    const { container } = boostContext;
-    if (!container || !href) return;
-    emitCtaClick(container, href);
-  }, [href, contentId]);
+    const onPress = useCallback(() => {
+        const { container } = boostContext;
+        if (!container || !href) return;
+        emitCtaClick(container, href);
+    }, [href, contentId]);
 
-  if (!href || href === '#') return null;
+    if (!href || href === '#') return null;
 
-  return (
-    <Button onPress={onPress} {...buttonProps}>
-      {children}
-    </Button>
-  );
+    return (
+        <Button onPress={onPress} {...buttonProps}>
+            {children}
+        </Button>
+    );
 }

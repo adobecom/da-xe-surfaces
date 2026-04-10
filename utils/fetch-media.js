@@ -23,25 +23,25 @@ const RETRY_DELAY_MS = 1500;
 const RETRY_MAX_ATTEMPTS = 3;
 
 async function fetchWithRetry(url, opts = {}) {
-  const {
-    resolveUrl,
-    maxAttempts = RETRY_MAX_ATTEMPTS,
-    retryStatuses = RETRY_STATUSES,
-    delayMs = RETRY_DELAY_MS,
-  } = opts;
-  const fetchUrl = resolveUrl ? resolveUrl(url) : url;
-  let lastResponse;
-  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-    const response = await fetch(fetchUrl, { cache: 'default' });
-    lastResponse = response;
-    if (response.ok || !retryStatuses.includes(response.status)) {
-      return response;
+    const {
+        resolveUrl,
+        maxAttempts = RETRY_MAX_ATTEMPTS,
+        retryStatuses = RETRY_STATUSES,
+        delayMs = RETRY_DELAY_MS,
+    } = opts;
+    const fetchUrl = resolveUrl ? resolveUrl(url) : url;
+    let lastResponse;
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+        const response = await fetch(fetchUrl, { cache: 'default' });
+        lastResponse = response;
+        if (response.ok || !retryStatuses.includes(response.status)) {
+            return response;
+        }
+        if (attempt < maxAttempts - 1) {
+            await new Promise((r) => { setTimeout(r, delayMs); });
+        }
     }
-    if (attempt < maxAttempts - 1) {
-      await new Promise((r) => { setTimeout(r, delayMs); });
-    }
-  }
-  return lastResponse;
+    return lastResponse;
 }
 
 /**
@@ -49,15 +49,15 @@ async function fetchWithRetry(url, opts = {}) {
  * Caller should revoke blob URL when no longer needed.
  */
 export async function fetchMediaAsBlobUrl(url, opts = {}) {
-  if (!url || url.startsWith('data:')) {
-    return url;
-  }
-  try {
-    const response = await fetchWithRetry(url, opts);
-    if (!response.ok) return url;
-    const blob = await response.blob();
-    return URL.createObjectURL(blob);
-  } catch {
-    return url;
-  }
+    if (!url || url.startsWith('data:')) {
+        return url;
+    }
+    try {
+        const response = await fetchWithRetry(url, opts);
+        if (!response.ok) return url;
+        const blob = await response.blob();
+        return URL.createObjectURL(blob);
+    } catch {
+        return url;
+    }
 }

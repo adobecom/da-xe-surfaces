@@ -122,8 +122,8 @@ Parsed from plain HTML (`div.<block-name>`, sections).
 | `components/BlockContainer.jsx` | S2 `Provider` + segment routing |
 | `components/ContentRenderer.jsx`, `CtaButton.jsx` | Block rendering / CTAs |
 | `blocks/*.jsx` | Text, RowCard, AdobeTv |
-| `context/boostContext.js` (`BOOST_EVENT`), `utils/parsePlainHtml.js`, `utils/utils.js`, `textBlockLogic.js`, `fetchMedia.js`, `types.js` | Parsing, events, helpers |
-| `context/boostContext.js` | Theme, container, dispatch |
+| `context/boost-context.js` (`BOOST_EVENT`), `utils/parse-plain-html.js`, `utils/utils.js`, `utils/text-block-logic.js`, `utils/fetch-media.js`, `types.js` | Parsing, events, helpers |
+| `context/boost-context.js` | Theme, container, dispatch |
 | `styles/*.css` | Typography + app styles (prefix-wrapped in build) |
 | `postcss.config.mjs` | ESM PostCSS config: `postcss-prefixwrap('.boost-blocks')` |
 | `webpack.config.cjs` | Production bundle, loaders (incl. `no-s2-scaling-loader.cjs`) |

@@ -22,35 +22,35 @@ import ContentRenderer from '../components/ContentRenderer.jsx';
  */
 
 export default function TextBlock({ block }) {
-  const isCenter = block?.blockClasses?.some((c) => c === 'center') ?? false;
-  const align = isCenter ? 'center' : 'flex-start';
-  const textAlign = isCenter ? 'center' : 'start';
-  const blockClasses = block?.blockClasses ?? [];
-  const extraClasses = blockClasses.filter((c) => c && c !== 'text' && c !== 'html').join(' ');
+    const isCenter = block?.blockClasses?.some((c) => c === 'center') ?? false;
+    const align = isCenter ? 'center' : 'flex-start';
+    const textAlign = isCenter ? 'center' : 'start';
+    const blockClasses = block?.blockClasses ?? [];
+    const extraClasses = blockClasses.filter((c) => c && c !== 'text' && c !== 'html').join(' ');
 
-  return (
-    <div
-      className={`text${extraClasses ? ` ${extraClasses}` : ''}`}
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: align,
-        textAlign,
-      }}
-    >
-      {(block?.rows || []).map((rowNodes, rowIdx) => (
+    return (
         <div
-          key={rowIdx}
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: align,
-            gap: 16,
-          }}
+            className={`text${extraClasses ? ` ${extraClasses}` : ''}`}
+            style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: align,
+                textAlign,
+            }}
         >
-          <ContentRenderer nodes={rowNodes} />
+            {(block?.rows || []).map((rowNodes, rowIdx) => (
+                <div
+                    key={rowIdx}
+                    style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: align,
+                        gap: 16,
+                    }}
+                >
+                    <ContentRenderer nodes={rowNodes} />
+                </div>
+            ))}
         </div>
-      ))}
-    </div>
-  );
+    );
 }

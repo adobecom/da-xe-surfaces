@@ -21,7 +21,7 @@
 
 /** Content tree (Milo-style): preserves DOM structure for safe rendering. */
 // eslint-disable-next-line no-unused-vars
-export const ContentNode = null; // JSDoc only; structure defined by parsePlainHtml
+export const ContentNode = null; // JSDoc only; structure defined by parse-plain-html.js
 
 /** Parsed text block: rows of content trees. */
 // eslint-disable-next-line no-unused-vars
