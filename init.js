@@ -106,12 +106,9 @@ export default class Boost extends LitElement {
         }
     }
 
-    async firstUpdated() {
+    firstUpdated() {
         if (this.theme) {
             boostContext.setTheme((this.theme && this.theme.trim()) || 'light');
-        }
-        if (this.path) {
-            await this.loadFragment(this.path);
         }
 
         if (this.env) {
@@ -127,7 +124,7 @@ export default class Boost extends LitElement {
         if (changedProperties.has('theme')) {
             boostContext.setTheme((this.theme && this.theme.trim()) || 'light');
         }
-        if (changedProperties.has('path') && this.hasUpdated) {
+        if (changedProperties.has('path')) {
             this.loadFragment(this.path);
         }
         const hostConfig = resolveHostConfig(this);
