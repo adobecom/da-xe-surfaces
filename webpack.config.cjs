@@ -1,19 +1,3 @@
-/** ******************************************************************
- * ADOBE CONFIDENTIAL
- *
- * Copyright 2026 Adobe
- * All Rights Reserved.
- *
- * NOTICE:  All information contained herein is, and remains
- * the property of Adobe and its suppliers, if any. The intellectual
- * and technical concepts contained herein are proprietary to Adobe
- * and its suppliers and are protected by all applicable intellectual
- * property laws, including trade secret and copyright laws.
- * Dissemination of this information or reproduction of this material
- * is strictly forbidden unless prior written permission is obtained
- * from Adobe.
- ****************************************************************** */
-
 const path = require('path');
 const macros = require('unplugin-parcel-macros');
 
@@ -22,13 +6,13 @@ const noS2ScalingLoader = path.resolve(
     'scripts/no-s2-scaling-loader.cjs',
 );
 
-module.exports = {
+module.exports = (_env, argv) => ({
     entry: './bundle-entry.js',
     output: {
         path: path.resolve(__dirname, 'dist'),
         filename: 'da-xe-surfaces.js',
     },
-    devtool: 'source-map',
+    devtool: argv.mode === 'production' ? 'hidden-source-map' : 'source-map',
     mode: 'production',
     optimization: {
         minimize: true,
@@ -71,4 +55,4 @@ module.exports = {
     // macros plugin must run before other syntax transformations like Babel
         macros.webpack(),
     ],
-};
+});
