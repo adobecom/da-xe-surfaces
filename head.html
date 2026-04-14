@@ -1,33 +1,23 @@
-<!-- Modifying this file will impact your performance -->
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<script src="/scripts/fallback.js" nomodule></script>
 <script>
-  const libs = (() => {
-    const { hostname, search } = window.location;
-    if (!['.aem.', '.stage.', 'local'].some((i) => hostname.includes(i))) return '/libs';
-    const branch = new URLSearchParams(search).get('milolibs') || 'main';
-    if (branch === 'local') return 'http://localhost:6456/libs';
-    return branch.includes('--') ? `https://${branch}.aem.live/libs` : `https://${branch}--milo--adobecom.aem.live/libs`;
-  })();
-
-  const miloStyles = document.createElement('link');
-  const miloUtils = document.createElement('link');
-  const miloDecorate = document.createElement('link');
-
-  miloStyles.setAttribute('as', 'style');
-  miloStyles.setAttribute('href', `${libs}/styles/styles.css`);
-
-  [miloUtils, miloDecorate].forEach((tag) => {
-    tag.setAttribute('crossorigin', 'true');
-    tag.setAttribute('as', 'script');
-  })
-
-  miloUtils.setAttribute('href', `${libs}/utils/utils.js`);
-  miloDecorate.setAttribute('href', `${libs}/utils/decorate.js`);
-
-  [miloStyles, miloUtils, miloDecorate].forEach((tag) => tag.setAttribute('rel', 'preload'));
-  document.head.append(miloStyles, miloUtils, miloDecorate);
+    window.app = window.app || {};
+    window.app.BUILD_MODE = "dynamic";
+    window.hlx = window.hlx || {};
+    window.hlx.codeBasePath = '';
+    window.process = window.process || { env: {} };
+    if (typeof globalThis !== 'undefined') globalThis.process = window.process;
 </script>
-<script src="/scripts/scripts.js" type="module"></script>
-<style>body { display: none; }</style>
+<!-- When HLX/AEM loads scripts as ESM (e.g. scripts/scripts.js), bare "react" must resolve. The bundle (dist/da-xe-surfaces.js) inlines React; this import map fixes raw ESM on preview. -->
+<script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@18.3.1",
+    "react-dom": "https://esm.sh/react-dom@18.3.1",
+    "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
+    "react/jsx-runtime": "https://esm.sh/react@18.3.1/jsx-runtime"
+  }
+}
+</script>
+<link rel="stylesheet" href="/styles/styles.css"/>
+<script type="module" src="/dist/da-xe-surfaces.js"></script>
 <link rel="icon" href="data:,">

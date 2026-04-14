@@ -1,7 +1,12 @@
+# Dependencies
+node_modules/
+
+# Test / tooling
+coverage/
 .hlx/*
-coverage/*
 logs/*
-node_modules/*
+
+# IDE / OS
 .DS_Store
 .idea
 .env
