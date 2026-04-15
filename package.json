@@ -23,7 +23,7 @@
   },
   "homepage": "https://github.com/adobecom/da-xe-surfaces#readme",
   "engines": {
-    "node": ">=24.0.0"
+    "node": ">=22.0.0"
   },
   "devDependencies": {
     "@babel/core": "7.17.7",
