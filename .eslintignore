@@ -1,7 +1,0 @@
-node_modules
-**/node_modules
-dist
-**/dist
-*.min.js
-package-lock.json
-react-xe-sites-test/

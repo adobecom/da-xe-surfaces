@@ -1,9 +1,0 @@
-{
-  "extends": ["stylelint-config-standard", "stylelint-config-prettier"],
-  "rules": {
-    "no-empty-source": null,
-    "rule-empty-line-before": null,
-    "comment-empty-line-before": null,
-    "no-descending-specificity": null
-  }
-}
